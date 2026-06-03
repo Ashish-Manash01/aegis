@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AegisFlow AI | Resilient Automotive Supply Chain & Smart Manufacturing Suite</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-logo">
+                    <i class="fa-solid fa-shield-halved logo-glow"></i>
+                </div>
+                <div class="brand-name">
+                    <h2>AegisFlow <span>AI</span></h2>
+                    <p>AutoTech Hackathon 2026</p>
+                </div>
+            </div>
+            
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="supply-chain">
+                    <i class="fa-solid fa-earth-americas"></i>
+                    <span>AltRoute-AI Map</span>
+                </button>
+                <button class="nav-item" data-tab="substitution">
+                    <i class="fa-solid fa-flask-vial"></i>
+                    <span>Substitut-AI</span>
+                </button>
+                <button class="nav-item" data-tab="smart-shopfloor">
+                    <i class="fa-solid fa-microscope"></i>
+                    <span>VisionDetect-AI</span>
+                </button>
+                <button class="nav-item" data-tab="supplier-analytics">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Supplier Analytics</span>
+                </button>
+                <button class="nav-item" data-tab="action-extractor">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>ActionExtract-AI</span>
+                </button>
+                <button class="nav-item" data-tab="adas-simulator">
+                    <i class="fa-solid fa-road"></i>
+                    <span>ADAS-Adopt-AI</span>
+                </button>
+                <button class="nav-item" data-tab="material-passport">
+                    <i class="fa-solid fa-qrcode"></i>
+                    <span>Passport-AI</span>
+                </button>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="theme-status">
+                    <div class="status-indicator online"></div>
+                    <span>AI Core Active</span>
+                </div>
+                <div class="user-meta">
+                    <p class="role">Theme 1 submission</p>
+                    <p class="org">AegisFlow Tech</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Top Header Bar -->
+            <header class="header">
+                <div class="header-left">
+                    <h1 id="page-title">Supply Chain Resilience Mapping</h1>
+                    <p id="page-subtitle" class="text-muted">Proactive risk detection, geopolitical hedging & alternate sourcing simulation</p>
+                </div>
+                <div class="header-right">
+                    <div class="stat-badge risk-alert animate-pulse" id="global-risk-badge">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Geopolitical Threat Level: HIGH</span>
+                    </div>
+                    <div class="stat-badge esg-badge">
+                        <i class="fa-solid fa-leaf"></i>
+                        <span>Carbon Savings: <strong id="esg-savings-percent">14.2%</strong></span>
+                    </div>
+                    <div class="user-profile">
+                        <i class="fa-regular fa-bell bell-icon"></i>
+                        <div class="divider"></div>
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Operator" class="avatar">
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Grid Viewports (Dynamically Switched) -->
+            <div class="viewport-container">
+                
+                <!-- TAB 1: Global Supply Chain Risk Map -->
+                <section class="viewport-tab active" id="tab-supply-chain">
+                    <div class="grid-2-col">
+                        <!-- Left Panel: Interactive Vector Map -->
+                        <div class="card map-card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-globe"></i> Interactive Supply Route Optimization</h3>
+                                <div class="card-actions">
+                                    <span class="badge badge-teal">Live Simulation</span>
+                                </div>
+                            </div>
+                            <div class="card-body relative">
+                                <div class="map-threat-controls">
+                                    <p class="control-label">Geopolitical Threat Triggers:</p>
+                                    <div class="btn-group">
+                                        <button class="btn btn-outline" id="trigger-taiwan">
+                                            <i class="fa-solid fa-anchor-lock"></i> Taiwan Strait Blockade
+                                        </button>
+                                        <button class="btn btn-outline" id="trigger-suez">
+                                            <i class="fa-solid fa-ship"></i> Suez Port Strike
+                                        </button>
+                                        <button class="btn btn-outline" id="trigger-tariff">
+                                            <i class="fa-solid fa-percent"></i> Lithium Trade Tariffs
+                                        </button>
+                                    </div>
+                                    <button class="btn btn-secondary btn-sm" id="reset-map">Reset Routes</button>
+                                </div>
+                                
+                                <!-- Custom World Map SVG with Sourcing Nodes & glowing routes -->
+                                <div class="svg-map-wrapper">
+                                    <svg id="world-map" viewBox="0 0 1000 480" xmlns="http://www.w3.org/2000/svg">
+                                        <!-- Definitions for gradients & glowing effects -->
+                                        <defs>
+                                            <radialGradient id="ocean-bg" cx="50%" cy="50%" r="50%">
+                                                <stop offset="0%" stop-color="#0f172a" />
+                                                <stop offset="100%" stop-color="#090d16" />
+                                            </radialGradient>
+                                            <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+                                                <feGaussianBlur stdDeviation="6" result="blur" />
+                                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                            </filter>
+                                            <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
+                                                <feGaussianBlur stdDeviation="8" result="blur" />
+                                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                            </filter>
+                                            <filter id="glow-teal" x="-20%" y="-20%" width="140%" height="140%">
+                                                <feGaussianBlur stdDeviation="5" result="blur" />
+                                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                            </filter>
+                                        </defs>
+
+                                        <!-- Background Ocean Rect -->
+                                        <rect width="1000" height="480" rx="12" fill="url(#ocean-bg)" />
+                                        
+                                        <!-- Simplified Landmass Outlines (Mock SVG Paths of Continents) -->
+                                        <path d="M120,80 L200,60 L280,70 L260,110 L180,130 L130,120 Z M150,180 L200,200 L240,240 L220,320 L160,350 L120,290 L130,220 Z" class="landmass" /> <!-- Americas -->
+                                        <path d="M400,100 L480,70 L540,90 L520,160 L450,180 L420,140 Z" class="landmass" /> <!-- Europe -->
+                                        <path d="M420,180 L490,190 L520,250 L480,320 L420,300 L400,220 Z" class="landmass" /> <!-- Africa -->
+                                        <path d="M520,80 L620,50 L750,70 L780,120 L720,220 L620,200 L540,160 Z" class="landmass" /> <!-- Asia -->
+                                        <path d="M570,180 L610,180 L640,210 L610,230 L560,210 Z" class="landmass" /> <!-- India Peninsula -->
+                                        <path d="M720,280 L790,260 L820,300 L760,350 L710,320 Z" class="landmass" /> <!-- Australia -->
+
+                                        <!-- Shipping Routes (Paths) -->
+                                        <!-- Primary Route (via Taiwan Strait/Suez) -->
+                                        <path id="route-primary" d="M720,130 Q630,190 580,210 Q490,190 450,150 T440,80" class="shipping-route route-primary-line" />
+                                        
+                                        <!-- Alternate Sourcing Route 1 (Atacama Chile to India) -->
+                                        <path id="route-alt-1" d="M190,260 Q340,330 460,300 Q530,260 580,210" class="shipping-route route-alt-line hidden" />
+                                        
+                                        <!-- Alternate Sourcing Route 2 (Domestic Sourcing C to India) -->
+                                        <path id="route-alt-2" d="M595,190 L580,210" class="shipping-route route-alt-line hidden" />
+
+                                        <!-- Supply Chain Sourcing Nodes -->
+                                        <!-- Node: India Manufacturing Hub -->
+                                        <circle cx="580" cy="210" r="10" class="node-dest" />
+                                        <text x="580" y="235" class="map-label label-bold">INDIA HUB (Pune)</text>
+                                        
+                                        <!-- Node: China Battery Component Supplier -->
+                                        <circle id="node-china" cx="720" cy="130" r="8" class="node-source online" />
+                                        <text x="720" y="115" class="map-label">Supplier A (Ningbo, CN)</text>
+                                        
+                                        <!-- Node: Chile Lithium Source -->
+                                        <circle id="node-chile" cx="190" cy="260" r="8" class="node-source alt-online" />
+                                        <text x="190" y="285" class="map-label">Sourcing B (Atacama, CL)</text>
+
+                                        <!-- Node: Domestic Indian Sourcing (Hindustan Metals) -->
+                                        <circle id="node-domestic" cx="595" cy="190" r="6" class="node-source domestic-node hidden" />
+                                        <text id="node-domestic-txt" x="610" y="193" class="map-label domestic-node hidden">Sourcing C (Domestic)</text>
+                                        
+                                        <!-- Port / Strait Bottlenecks -->
+                                        <circle id="strait-taiwan" cx="680" cy="150" r="14" class="strait-marker" />
+                                        <text x="698" y="154" class="strait-label text-muted">Taiwan Strait</text>
+
+                                        <circle id="strait-suez" cx="485" cy="170" r="14" class="strait-marker" />
+                                        <text x="445" y="188" class="strait-label text-muted">Suez Canal</text>
+                                    </svg>
+                                    
+                                    <!-- Dynamic Map Floating Alerts -->
+                                    <div class="map-alert-card hidden" id="map-alert">
+                                        <h4 class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Threat Detected!</h4>
+                                        <p id="map-alert-text">Suez Canal is blocked. Indian Ocean shipments stranded.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Sourcing Decision Dashboard -->
+                        <div class="card flex-col">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-route"></i> Route Optimization Intelligence</h3>
+                            </div>
+                            <div class="card-body flex-1 justify-between">
+                                <div class="route-details-list">
+                                    
+                                    <!-- Sourcing Route 1: Current Active Route -->
+                                    <div class="route-info-box" id="info-box-primary">
+                                        <div class="route-box-header">
+                                            <span class="route-title">Primary Route (Sourcing A)</span>
+                                            <span class="badge status-active" id="primary-route-status">ACTIVE</span>
+                                        </div>
+                                        <div class="route-metrics">
+                                            <div class="metric">
+                                                <span class="label">Lead Time</span>
+                                                <span class="val" id="primary-lead-time">18 Days</span>
+                                            </div>
+                                            <div class="metric">
+                                                <span class="label">Risk Index</span>
+                                                <span class="val text-warning" id="primary-risk">42%</span>
+                                            </div>
+                                            <div class="metric">
+                                                <span class="label">Sourcing Cost</span>
+                                                <span class="val" id="primary-cost">$12.4/kg</span>
+                                            </div>
+                                        </div>
+                                        <div class="progress-bar-wrapper">
+                                            <div class="progress-bar-label">Geopolitical Sourcing Dependency</div>
+                                            <div class="progress-container">
+                                                <div class="progress-fill warning-fill" id="primary-dependency-fill" style="width: 78%;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Sourcing Route 2: Alternate Sourcing Recommended by AI -->
+                                    <div class="route-info-box inactive" id="info-box-alt-1">
+                                        <div class="route-box-header">
+                                            <span class="route-title">Alternate Route 1 (Sourcing B - Chile)</span>
+                                            <span class="badge badge-teal">AI RECOMMENDED</span>
+                                        </div>
+                                        <div class="route-metrics">
+                                            <div class="metric">
+                                                <span class="label">Lead Time</span>
+                                                <span class="val text-teal">24 Days (+6d)</span>
+                                            </div>
+                                            <div class="metric">
+                                                <span class="label">Risk Index</span>
+                                                <span class="val text-success">12% (-30%)</span>
+                                            </div>
+                                            <div class="metric">
+                                                <span class="label">Sourcing Cost</span>
+                                                <span class="val">$13.1/kg (+5.6%)</span>
+                                            </div>
+                                        </div>
+                                        <div class="progress-bar-wrapper">
+                                            <div class="progress-bar-label">Geopolitical Sourcing Dependency</div>
+                                            <div class="progress-container">
+                                                <div class="progress-fill success-fill" style="width: 15%;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Sourcing Route 3: Domestic/Near-Shore Option -->
+                                    <div class="route-info-box inactive" id="info-box-alt-2">
+                                        <div class="route-box-header">
+                                            <span class="route-title">Alternate Route 2 (Sourcing C - Domestic)</span>
+                                            <span class="badge status-yellow">LOCAL OPTION</span>
+                                        </div>
+                                        <div class="route-metrics">
+                                            <div class="metric">
+                                                <span class="label">Lead Time</span>
+                                                <span class="val text-success">4 Days (-14d)</span>
+                                            </div>
+                                            <div class="metric">
+                                                <span class="label">Risk Index</span>
+                                                <span class="val text-success">2% (-40%)</span>
+                                            </div>
+                                            <div class="metric">
+                                                <span class="label">Sourcing Cost</span>
+                                                <span class="val text-warning">$15.2/kg (+22.5%)</span>
+                                            </div>
+                                        </div>
+                                        <div class="progress-bar-wrapper">
+                                            <div class="progress-bar-label">Geopolitical Sourcing Dependency</div>
+                                            <div class="progress-container">
+                                                <div class="progress-fill success-fill" style="width: 3%;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <div class="action-panel">
+                                    <div class="ai-copilot-bubble">
+                                        <div class="copilot-header">
+                                            <i class="fa-solid fa-robot text-teal"></i>
+                                            <span>AltRoute AI Copilot Recommendation</span>
+                                        </div>
+                                        <p class="copilot-suggestion" id="copilot-suggestion-text">
+                                            "System is running at baseline parameters. Primary sourcing from Ningbo, CN via Taiwan Strait is stable. Geopolitical Risk Index is within tolerance. Monitor Suez strike alerts."
+                                        </p>
+                                    </div>
+                                    <div class="action-buttons-group">
+                                        <button class="btn btn-primary btn-block" id="action-mitigate" disabled>
+                                            <i class="fa-solid fa-shield-halved"></i> Execute Sourcing Redirection
+                                        </button>
+                                        <button class="btn btn-secondary btn-block" id="btn-export-pitch">
+                                            <i class="fa-regular fa-file-powerpoint"></i> View/Generate Hackathon Pitch Deck
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 2: Material Substitution Engine -->
+                <section class="viewport-tab" id="tab-substitution">
+                    <div class="grid-2-col">
+                        <!-- Left Panel: Sliders and Selections -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-flask-vial text-teal"></i> Substitut-AI Formulation Laboratory</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group mb-6">
+                                    <label class="form-label" for="material-select">Critical Raw Material to Substitute:</label>
+                                    <select class="form-control" id="material-select">
+                                        <option value="neodymium">Neodymium (NdFeB Magnet for EV Traction Motors)</option>
+                                        <option value="lithium">Battery-Grade Lithium Carbonate (EV Battery Cells)</option>
+                                        <option value="semiconductor">ECU Power MOSFET Semiconductor Chips</option>
+                                    </select>
+                                </div>
+
+                                <div class="substitution-interactive-lab">
+                                    <div class="lab-schema-visual">
+                                        <div class="material-vessel primary-vessel">
+                                            <span class="vessel-label" id="label-vessel-primary">Neodymium</span>
+                                            <div class="liquid primary-liquid" id="liquid-primary" style="height: 100%;"></div>
+                                            <span class="vessel-percentage" id="pct-vessel-primary">100%</span>
+                                        </div>
+                                        <div class="vessel-connector">
+                                            <i class="fa-solid fa-right-left text-muted"></i>
+                                        </div>
+                                        <div class="material-vessel alternate-vessel">
+                                            <span class="vessel-label" id="label-vessel-alternate">Ferrite Magnet</span>
+                                            <div class="liquid alternate-liquid" id="liquid-alternate" style="height: 0%;"></div>
+                                            <span class="vessel-percentage" id="pct-vessel-alternate">0%</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group mt-6">
+                                        <div class="slider-header-flex">
+                                            <label class="form-label">Substitution Ratio</label>
+                                            <span class="slider-value text-teal" id="sub-ratio-label">0% Sourcing Re-blend</span>
+                                        </div>
+                                        <input type="range" min="0" max="100" value="0" class="form-range" id="substitution-slider">
+                                        <span class="help-text">Adjust to simulate blending alternative technologies or chemistries in manufacturing.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Performance and Trade-Off Radar Comparison -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-arrows-spin"></i> AI Sourcing & Performance Trade-off Matrix</h3>
+                            </div>
+                            <div class="card-body flex-col justify-between">
+                                <div class="radar-mock-bars">
+                                    
+                                    <!-- Bar 1: Geopolitical Risk Sourcing -->
+                                    <div class="comparison-bar-item">
+                                        <div class="bar-info-flex">
+                                            <span>Sourcing Geopolitical Risk</span>
+                                            <span class="bar-val text-warning" id="bar-val-risk">High Risk (85/100)</span>
+                                        </div>
+                                        <div class="comparison-progress-container">
+                                            <div class="comparison-progress-fill bg-danger animate-width" id="bar-fill-risk" style="width: 85%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bar 2: Technical Performance -->
+                                    <div class="comparison-bar-item">
+                                        <div class="bar-info-flex">
+                                            <span id="label-bar-perf">Motor Torque / Energy Density</span>
+                                            <span class="bar-val text-success" id="bar-val-perf">Optimal (100%)</span>
+                                        </div>
+                                        <div class="comparison-progress-container">
+                                            <div class="comparison-progress-fill bg-success animate-width" id="bar-fill-perf" style="width: 100%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bar 3: Component Weight / Footprint -->
+                                    <div class="comparison-bar-item">
+                                        <div class="bar-info-flex">
+                                            <span id="label-bar-weight">Weight Penalty</span>
+                                            <span class="bar-val text-success" id="bar-val-weight">None (+0%)</span>
+                                        </div>
+                                        <div class="comparison-progress-container">
+                                            <div class="comparison-progress-fill bg-success animate-width" id="bar-fill-weight" style="width: 5%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bar 4: Manufacturing Cost -->
+                                    <div class="comparison-bar-item">
+                                        <div class="bar-info-flex">
+                                            <span>Raw Material Sourcing Cost</span>
+                                            <span class="bar-val" id="bar-val-cost">Baseline ($140/kg)</span>
+                                        </div>
+                                        <div class="comparison-progress-container">
+                                            <div class="comparison-progress-fill bg-teal animate-width" id="bar-fill-cost" style="width: 75%;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bar 5: Sustainability Index (CO2 Output) -->
+                                    <div class="comparison-bar-item">
+                                        <div class="bar-info-flex">
+                                            <span>Carbon Footprint (Lifecycle ESG)</span>
+                                            <span class="bar-val text-warning" id="bar-val-esg">Elevated (64 kg CO2/kg)</span>
+                                        </div>
+                                        <div class="comparison-progress-container">
+                                            <div class="comparison-progress-fill bg-warning animate-width" id="bar-fill-esg" style="width: 64%;"></div>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <div class="substitution-recommendation-box mt-6">
+                                    <div class="box-header-flex">
+                                        <i class="fa-solid fa-lightbulb text-teal"></i>
+                                        <strong>Substitut-AI Sourcing Verdict</strong>
+                                    </div>
+                                    <p id="substitution-verdict-text" class="mt-2 text-muted">
+                                        "Using pure Neodymium provides maximum torque density but exposes supply lines to Chinese export restrictions (85% risk). Consider blending 30% Ferrite magnets to reduce supply risk by 25% while incurring a minor 8% weight penalty."
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 3: VisionDetect-AI Smart Shopfloor weld inspector -->
+                <section class="viewport-tab" id="tab-smart-shopfloor">
+                    <div class="grid-2-col">
+                        <!-- Left Panel: Real-Time Welding Video Simulator -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-video text-teal"></i> VisionDetect-AI Weld Quality Monitor (Real-Time Feed)</h3>
+                                <div class="header-controls">
+                                    <button class="btn btn-outline btn-sm mr-2" id="btn-trigger-defect"><i class="fa-solid fa-bolt"></i> Inject Weld Defect</button>
+                                    <span class="badge badge-pulse">Edge Camera #4</span>
+                                </div>
+                            </div>
+                            <div class="card-body relative bg-dark-viewport flex-col items-center justify-center">
+                                <div class="canvas-viewport">
+                                    <!-- HTML5 Canvas for simulating live camera weld joints inspections -->
+                                    <canvas id="weld-canvas" width="480" height="280"></canvas>
+                                    
+                                    <!-- Scan overlays -->
+                                    <div class="scan-laser"></div>
+                                    <div class="crosshair-center"></div>
+                                    <div class="canvas-lens-stats">
+                                        <div class="lens-item">SCAN RATE: <span>120 FPS</span></div>
+                                        <div class="lens-item">CONFIDENCE THRESHOLD: <span>90%</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Cp/Cpk analytics & guidance -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-chart-area"></i> Process Capability Analytics (Cp / Cpk) & Operator Guidance</h3>
+                            </div>
+                            <div class="card-body flex-col justify-between">
+                                <!-- Process capability charts / control limits -->
+                                <div class="cpk-stats-box mb-4">
+                                    <div class="cpk-flex-row">
+                                        <div class="cpk-card">
+                                            <span class="cpk-lbl">Process Capability (Cp)</span>
+                                            <span class="cpk-val text-success" id="val-cp">1.54</span>
+                                            <span class="cpk-help-text">Target: &gt;1.50</span>
+                                        </div>
+                                        <div class="cpk-card">
+                                            <span class="cpk-lbl">Process Accuracy (Cpk)</span>
+                                            <span class="cpk-val text-success" id="val-cpk">1.48</span>
+                                            <span class="cpk-help-text">Target: &gt;1.33</span>
+                                        </div>
+                                        <div class="cpk-card">
+                                            <span class="cpk-lbl">Weld Defect Rate</span>
+                                            <span class="cpk-val text-success" id="val-defect-rate">0.02%</span>
+                                            <span class="cpk-help-text">Yield target: 99.9%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Custom responsive mini control chart -->
+                                <div class="control-chart-wrapper">
+                                    <div class="chart-header-flex">
+                                        <span class="chart-title">Weld Quality SPC Control Chart (Cylinder Weld Joint Delta)</span>
+                                        <span class="chart-alert text-success" id="chart-alert-lbl">Process in Control</span>
+                                    </div>
+                                    <div class="svg-chart-container">
+                                        <svg id="spc-chart" viewBox="0 0 420 120" xmlns="http://www.w3.org/2000/svg">
+                                            <!-- Spec Limits -->
+                                            <line x1="0" y1="20" x2="420" y2="20" class="spec-limit usl" />
+                                            <text x="380" y="15" class="spec-txt">USL (1.00)</text>
+                                            
+                                            <line x1="0" y1="60" x2="420" y2="60" class="spec-limit mean" />
+                                            <text x="380" y="55" class="spec-txt">Mean (0.00)</text>
+                                            
+                                            <line x1="0" y1="100" x2="420" y2="100" class="spec-limit lsl" />
+                                            <text x="380" y="95" class="spec-txt">LSL (-1.00)</text>
+
+                                            <!-- SPC Data Line -->
+                                            <path id="spc-line" d="M 0,60 L 40,65 L 80,55 L 120,70 L 160,52 L 200,61 L 240,58 L 280,64 L 320,53 L 360,60 L 400,59" class="spc-data-line" />
+                                            <g id="spc-points"></g>
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <!-- Operator Guidance panel -->
+                                <div class="operator-guide-box mt-4" id="operator-guide-panel">
+                                    <div class="guide-header-flex">
+                                        <span class="guide-title"><i class="fa-solid fa-clipboard-check text-success"></i> Operator Co-Pilot: Welder Line 4 Status</span>
+                                        <span class="badge badge-success">Nominal</span>
+                                    </div>
+                                    <p class="guide-instruction" id="guide-instruction-text">
+                                        "Process is highly centered. Cp is 1.54, indicating excellent process potential. No intervention necessary. Standard weld energy output (1400J) maintained."
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 4: Supplier Analytics -->
+                <section class="viewport-tab" id="tab-supplier-analytics">
+                    <div class="grid-2-col">
+                        <!-- Left Panel: GRI vs Lead Time Scatter Plot -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-chart-scatter text-teal"></i> Sourcing Optimization: Geopolitical Risk vs. Sourcing Lead Time</h3>
+                                <div class="card-actions">
+                                    <span class="badge badge-outline">Multi-Factor Analysis</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="scatter-filters mb-4">
+                                    <div class="filter-group">
+                                        <span class="filter-lbl">Filters:</span>
+                                        <button class="btn btn-outline btn-xs active-btn" id="filter-all-suppliers">All Suppliers</button>
+                                        <button class="btn btn-outline btn-xs" id="filter-low-gri">GRI &lt; 40%</button>
+                                        <button class="btn btn-outline btn-xs" id="filter-high-esg">ESG Priority (A/B)</button>
+                                    </div>
+                                </div>
+
+                                <!-- SVG Scatter Plot -->
+                                <div class="svg-scatter-wrapper relative">
+                                    <svg id="scatter-chart" viewBox="0 0 500 300" xmlns="http://www.w3.org/2000/svg">
+                                        <!-- Axis lines -->
+                                        <line x1="40" y1="260" x2="480" y2="260" stroke="#1e293b" stroke-width="2" />
+                                        <line x1="40" y1="20" x2="40" y2="260" stroke="#1e293b" stroke-width="2" />
+
+                                        <!-- Grid lines -->
+                                        <line x1="40" y1="80" x2="480" y2="80" stroke="#1e293b" stroke-dasharray="2 2" />
+                                        <line x1="40" y1="140" x2="480" y2="140" stroke="#1e293b" stroke-dasharray="2 2" />
+                                        <line x1="40" y1="200" x2="480" y2="200" stroke="#1e293b" stroke-dasharray="2 2" />
+                                        
+                                        <line x1="150" y1="20" x2="150" y2="260" stroke="#1e293b" stroke-dasharray="2 2" />
+                                        <line x1="260" y1="20" x2="260" y2="260" stroke="#1e293b" stroke-dasharray="2 2" />
+                                        <line x1="370" y1="20" x2="370" y2="260" stroke="#1e293b" stroke-dasharray="2 2" />
+
+                                        <!-- Axis Labels -->
+                                        <text x="260" y="295" class="axis-lbl" text-anchor="middle">Sourcing Lead Time (Days)</text>
+                                        <text x="12" y="140" class="axis-lbl" text-anchor="middle" transform="rotate(-90 12 140)">Geopolitical Risk (GRI %)</text>
+                                        
+                                        <!-- X Axis Ticks -->
+                                        <text x="150" y="275" class="axis-tick" text-anchor="middle">10d</text>
+                                        <text x="260" y="275" class="axis-tick" text-anchor="middle">20d</text>
+                                        <text x="370" y="275" class="axis-tick" text-anchor="middle">30d</text>
+
+                                        <!-- Y Axis Ticks -->
+                                        <text x="28" y="200" class="axis-tick" text-anchor="end">25%</text>
+                                        <text x="28" y="140" class="axis-tick" text-anchor="end">50%</text>
+                                        <text x="28" y="80" class="axis-tick" text-anchor="end">75%</text>
+
+                                        <!-- Interactive Data Bubbles -->
+                                        <!-- Ningbo Battery Sourcing -->
+                                        <circle id="bub-ningbo" cx="240" cy="65" r="16" class="scatter-bubble risk-high" data-supplier="Ningbo Sourcing" />
+                                        <text x="240" y="44" class="bub-lbl" text-anchor="middle">Ningbo Sourcing (CN)</text>
+
+                                        <!-- Atacama Chile Lithium -->
+                                        <circle id="bub-atacama" cx="300" cy="210" r="14" class="scatter-bubble risk-low" data-supplier="Atacama Lithium" />
+                                        <text x="300" y="191" class="bub-lbl" text-anchor="middle">Atacama Lithium (CL)</text>
+
+                                        <!-- Hindustan Special Metals -->
+                                        <circle id="bub-hindustan" cx="90" cy="245" r="11" class="scatter-bubble domestic" data-supplier="Hindustan Metals" />
+                                        <text x="90" y="228" class="bub-lbl" text-anchor="middle">Hindustan Metals (IN)</text>
+
+                                        <!-- Aussie Mineral Corp -->
+                                        <circle id="bub-aussie" cx="330" cy="180" r="13" class="scatter-bubble risk-low" data-supplier="Aussie Mineral Corp" />
+                                        <text x="330" y="161" class="bub-lbl" text-anchor="middle">Aussie Minerals (AU)</text>
+
+                                        <!-- Rhineland Semiconductors -->
+                                        <circle id="bub-rhine" cx="280" cy="110" r="15" class="scatter-bubble risk-mid" data-supplier="Rhineland Semiconductors" />
+                                        <text x="280" y="90" class="bub-lbl" text-anchor="middle">Rhineland Semi (DE)</text>
+
+                                        <!-- Taiwan Microchip Corp -->
+                                        <circle id="bub-taiwan" cx="220" cy="50" r="17" class="scatter-bubble risk-high" data-supplier="Taiwan Microchip Corp" />
+                                        <text x="220" y="28" class="bub-lbl" text-anchor="middle">Taiwan Chip Corp (TW)</text>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Detailed Supplier Profile Card -->
+                        <div class="card flex-col">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-address-card text-teal"></i> Supplier Risk & ESG Analytical Profile</h3>
+                            </div>
+                            <div class="card-body flex-1 flex-col justify-between" id="supplier-profile-body">
+                                <div class="supplier-profile-header">
+                                    <div class="supplier-avatar-wrapper">
+                                        <i class="fa-solid fa-industry supplier-icon"></i>
+                                    </div>
+                                    <div class="supplier-title-meta">
+                                        <h4 id="profile-supplier-name">Ningbo Sourcing Corp</h4>
+                                        <p id="profile-supplier-location"><i class="fa-solid fa-location-dot"></i> Ningbo, Zhejiang Province, China</p>
+                                    </div>
+                                </div>
+
+                                <div class="supplier-stats-grid mt-4">
+                                    <div class="stat-item-box">
+                                        <span class="stat-lbl">Geopolitical Risk Index</span>
+                                        <span class="stat-val text-danger" id="profile-gri">82%</span>
+                                    </div>
+                                    <div class="stat-item-box">
+                                        <span class="stat-lbl">Average Sourcing Lead Time</span>
+                                        <span class="stat-val" id="profile-lead-time">18 Days</span>
+                                    </div>
+                                    <div class="stat-item-box">
+                                        <span class="stat-lbl">Sustainability Rating (ESG)</span>
+                                        <span class="stat-val text-warning" id="profile-esg">Grade D</span>
+                                    </div>
+                                    <div class="stat-item-box">
+                                        <span class="stat-lbl">Manufacturing Quality (Cpk)</span>
+                                        <span class="stat-val text-success" id="profile-quality">1.42</span>
+                                    </div>
+                                </div>
+
+                                <div class="supplier-risk-factors mt-4">
+                                    <h5 class="section-sub-title">Active Sourcing Bottlenecks</h5>
+                                    <ul class="risk-bullets" id="profile-bottlenecks">
+                                        <li><i class="fa-solid fa-triangle-exclamation text-danger"></i> Substantial export licensing restrictions on Critical Minerals.</li>
+                                        <li><i class="fa-solid fa-triangle-exclamation text-warning"></i> Transit route passes entirely through congested Taiwan Strait lanes.</li>
+                                        <li><i class="fa-solid fa-triangle-exclamation text-warning"></i> High reliance on coal-powered smelting grid.</li>
+                                    </ul>
+                                </div>
+
+                                <div class="supplier-action-panel mt-6">
+                                    <button class="btn btn-outline btn-block" id="btn-supplier-erp"><i class="fa-solid fa-cart-shopping"></i> Review ERP Purchase Agreement</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 5: AI Meeting & Action Extractor -->
+                <section class="viewport-tab" id="tab-action-extractor">
+                    <div class="grid-2-col">
+                        <!-- Left Panel: Meeting Audio/Text Input -->
+                        <div class="card flex-col">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-keyboard text-teal"></i> Shopfloor Operator Briefing / Sourcing Transcript Input</h3>
+                                <div class="header-controls">
+                                    <select class="form-control form-control-sm" id="transcript-selector">
+                                        <option value="sourcing-disruption">Scenario A: Critical Lithium Sourcing Delay</option>
+                                        <option value="shopfloor-defect">Scenario B: Line 4 Weld Defect Spike</option>
+                                        <option value="sustainability-audit">Scenario C: Supplier Sustainability Compliance Review</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-body flex-1 flex-col justify-between">
+                                <div class="form-group flex-1 relative flex-col" style="position: relative;">
+                                    <textarea class="form-control text-area-transcript flex-1" id="transcript-text" placeholder="Paste shopfloor logs, team meeting audio transcripts, or operational emails..."></textarea>
+                                    <button class="btn-voice-mic" id="btn-voice-briefing" title="Simulate Operator Voice Dictation">
+                                        <i class="fa-solid fa-microphone"></i>
+                                    </button>
+                                </div>
+                                <div class="btn-action-group mt-4">
+                                    <button class="btn btn-primary btn-block" id="btn-parse-transcript">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i> Extract Actions & Sourcing Adjustments
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: Dynamic AI Extraction Results -->
+                        <div class="card flex-col">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-list-check"></i> ActionExtract-AI Parsing Engine Output</h3>
+                                <span class="badge badge-teal">Zero-Latency Edge Extraction</span>
+                            </div>
+                            <div class="card-body flex-1 flex-col justify-between" id="extractor-results-body">
+                                
+                                <div class="empty-state-results flex-col items-center justify-center flex-1" id="results-empty-state">
+                                    <i class="fa-solid fa-wand-magic-sparkles magic-icon-pulsing mb-4"></i>
+                                    <h4>Ready to Parse Transcript</h4>
+                                    <p class="text-muted text-center max-w-sm mt-2">Paste or select an operational scenario on the left and click "Extract Actions" to analyze utilizing NLP LLM edge parsing.</p>
+                                </div>
+
+                                <div class="results-layout hidden" id="results-data-container">
+                                    <!-- Action items -->
+                                    <div class="results-section">
+                                        <h4 class="section-sub-title"><i class="fa-solid fa-tasks text-teal"></i> Decoupled Action Items</h4>
+                                        <div class="extracted-tasks-list" id="extracted-tasks-container">
+                                            <!-- Structured items will be injected here -->
+                                        </div>
+                                    </div>
+
+                                    <!-- ERP Sourcing proposals -->
+                                    <div class="results-section mt-4">
+                                        <h4 class="section-sub-title"><i class="fa-solid fa-file-contract text-warning"></i> Automated ERP Sourcing & Process Reorders</h4>
+                                        <div class="erp-sourcing-proposal" id="erp-proposals-container">
+                                            <!-- ERP items will be injected here -->
+                                        </div>
+                                    </div>
+
+                                    <!-- Supplier Correspondence Draft -->
+                                    <div class="results-section mt-4">
+                                        <h4 class="section-sub-title"><i class="fa-solid fa-envelope-open-text text-success"></i> Auto-Drafted Supplier/Team Communication</h4>
+                                        <div class="email-draft-box relative">
+                                            <button class="btn-copy" id="btn-copy-email" title="Copy to clipboard"><i class="fa-regular fa-copy"></i></button>
+                                            <pre class="email-pre" id="email-draft-content">
+                                            </pre>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 6: Indian ADAS Road Simulator -->
+                <section class="viewport-tab" id="tab-adas-simulator">
+                    <div class="grid-2-col">
+                        <!-- Left Panel: Windshield Dashcam feed -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-road text-teal"></i> ADAS-Adopt-AI: Indian Road Windshield Feed</h3>
+                                <div class="header-controls">
+                                    <span class="badge badge-pulse">ADAS Active (Level 2+)</span>
+                                </div>
+                            </div>
+                            <div class="card-body relative bg-dark-viewport flex-col items-center justify-center">
+                                <div class="canvas-viewport">
+                                    <!-- Canvas for driving simulation -->
+                                    <canvas id="adas-canvas" width="480" height="280"></canvas>
+                                    
+                                    <!-- Scanlines and Target lines -->
+                                    <div class="scan-laser" style="animation-duration: 4s;"></div>
+                                    <div class="canvas-lens-stats">
+                                        <div class="lens-item">ADAS STATE: <span>NOMINAL</span></div>
+                                        <div class="lens-item">LATENCY: <span>12 ms</span></div>
+                                    </div>
+                                    
+                                    <!-- Floating Threat Hud -->
+                                    <div class="map-alert-card hidden" id="adas-hud-overlay" style="bottom: 10px; left: 10px; max-width: 250px; z-index: 10;">
+                                        <h4 class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Road Threat Detected!</h4>
+                                        <p id="adas-hud-text" style="font-size: 0.7rem; color: #cbd5e1; margin-top: 0.25rem;">Stray Cow detected at 15m</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="map-threat-controls mt-4" style="margin-bottom: 0; width: 100%; display: flex; flex-direction: column; gap: 0.75rem; align-items: stretch;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                                        <p class="control-label">Trigger Road Threats (India Context):</p>
+                                        <div class="btn-group">
+                                            <button class="btn btn-outline btn-sm" id="trigger-cattle">
+                                                <i class="fa-solid fa-cow"></i> Stray Cattle
+                                            </button>
+                                            <button class="btn btn-outline btn-sm" id="trigger-pothole">
+                                                <i class="fa-solid fa-road-spikes"></i> Deep Pothole
+                                            </button>
+                                            <button class="btn btn-outline btn-sm" id="trigger-rickshaw">
+                                                <i class="fa-solid fa-truck-monster"></i> Lane Cut-in
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; border-top: 1px solid var(--border-muted); padding-top: 0.75rem;">
+                                        <p class="control-label">Environmental / Weather Simulator:</p>
+                                        <div class="btn-group" id="adas-weather-group">
+                                            <button class="btn btn-outline btn-sm active-btn" id="weather-clear" data-weather="clear">
+                                                <i class="fa-solid fa-sun"></i> Clear
+                                            </button>
+                                            <button class="btn btn-outline btn-sm" id="weather-rain" data-weather="rain">
+                                                <i class="fa-solid fa-cloud-showers-water"></i> Rain
+                                            </button>
+                                            <button class="btn btn-outline btn-sm" id="weather-fog" data-weather="fog">
+                                                <i class="fa-solid fa-smog"></i> Fog
+                                            </button>
+                                            <button class="btn btn-outline btn-sm" id="weather-night" data-weather="night">
+                                                <i class="fa-solid fa-moon"></i> Night
+                                            </button>
+                                        </div>
+                                        <button class="btn btn-secondary btn-sm" id="reset-adas">Reset ADAS</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: ADAS Telemetry and AI Mitigation Status -->
+                        <div class="card flex-col">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-gauge-high"></i> Telemetry & Safety Steering Co-pilot</h3>
+                            </div>
+                            <div class="card-body flex-1 flex-col justify-between">
+                                <!-- Telemetry meters -->
+                                <div class="cpk-stats-box mb-4">
+                                    <div class="cpk-flex-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;">
+                                        <div class="cpk-card" id="adas-card-speed">
+                                            <span class="cpk-lbl" style="font-size: 0.65rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Vehicular Speed</span>
+                                            <span class="cpk-val" id="val-adas-speed" style="display: block; font-family: var(--font-heading); font-weight: 800; font-size: 1.3rem; margin-top: 0.15rem; color: var(--color-teal);">60 km/h</span>
+                                            <span class="cpk-help-text" style="font-size: 0.6rem; color: #475569;">Throttle: Active</span>
+                                        </div>
+                                        <div class="cpk-card" id="adas-card-brake">
+                                            <span class="cpk-lbl" style="font-size: 0.65rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Braking Ratio</span>
+                                            <span class="cpk-val text-success" id="val-adas-brake" style="display: block; font-family: var(--font-heading); font-weight: 800; font-size: 1.3rem; margin-top: 0.15rem;">0%</span>
+                                            <span class="cpk-help-text" style="font-size: 0.6rem; color: #475569;">AEB Ready</span>
+                                        </div>
+                                        <div class="cpk-card">
+                                            <span class="cpk-lbl" style="font-size: 0.65rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Driver Alertness</span>
+                                            <span class="cpk-val text-success" id="val-adas-alert" style="display: block; font-family: var(--font-heading); font-weight: 800; font-size: 1.3rem; margin-top: 0.15rem;">98%</span>
+                                            <span class="cpk-help-text" style="font-size: 0.6rem; color: #475569;">DMS: Attentive</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Current Threat Status card -->
+                                <div class="control-chart-wrapper flex-col justify-between" style="padding: 1rem;">
+                                    <div class="chart-header-flex">
+                                        <span class="chart-title">Visual Object Detection Pipeline (YOLOv8 Edge)</span>
+                                        <span class="chart-alert text-success" id="adas-object-alert">Clear Path</span>
+                                    </div>
+                                    <div class="adas-telemetry-metrics mt-2">
+                                        <div class="metric-row-flex" style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.25rem;">
+                                            <span class="text-muted">Target Object:</span>
+                                            <strong id="adas-target-name">None</strong>
+                                        </div>
+                                        <div class="metric-row-flex" style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.25rem;">
+                                            <span class="text-muted">Distance to Object:</span>
+                                            <strong id="adas-target-dist">N/A</strong>
+                                        </div>
+                                        <div class="metric-row-flex" style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+                                            <span class="text-muted">Steering Auto-Correction:</span>
+                                            <strong id="adas-steering-status" class="text-success">Center Alignment</strong>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Active AI Safeguards Guidance -->
+                                <div class="operator-guide-box mt-4" id="adas-guide-panel">
+                                    <div class="guide-header-flex">
+                                        <span class="guide-title"><i class="fa-solid fa-shield-halved text-success"></i> ADAS Indian Road Safeguards</span>
+                                        <span class="badge badge-success">Nominal</span>
+                                    </div>
+                                    <p class="guide-instruction" id="adas-guide-instruction">
+                                        "Vehicle tracking is running at baseline parameters. Speed is within normal Indian urban road limits. Steering lanes tracking is active. Keep standard safety buffers."
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 7: EV Battery Digital Material Passport Explorer -->
+                <section class="viewport-tab" id="tab-material-passport">
+                    <div class="grid-2-col">
+                        <!-- Left Panel: Scanner visual -->
+                        <div class="card flex-col">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-qrcode text-teal"></i> Passport-AI: Battery Pack QR Scanner</h3>
+                                <span class="badge badge-pulse" id="scanner-indicator">Scanner Ready</span>
+                            </div>
+                            <div class="card-body relative bg-dark-viewport flex-1 flex-col items-center justify-center">
+                                <div class="battery-scan-container relative" style="width: 100%; max-width: 320px; height: 180px; border: 1.5px dashed var(--border-muted); border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.4);">
+                                    
+                                    <!-- Simulated battery pack -->
+                                    <div class="battery-mesh" id="battery-mesh" style="position: relative; width: 140px; height: 80px; border: 3px solid #475569; border-radius: 6px; background-color: #1e293b; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(255,255,255,0.05); transition: var(--transition-smooth);">
+                                        <div class="battery-node-cap" style="position: absolute; right: -8px; width: 6px; height: 30px; background-color: #475569; border-radius: 0 3px 3px 0;"></div>
+                                        <i class="fa-solid fa-car-battery" style="font-size: 2.2rem; color: #475569; transition: var(--transition-smooth);" id="battery-icon-pulse"></i>
+                                    </div>
+                                    
+                                    <!-- Animated scanning laser line -->
+                                    <div class="scan-laser hidden" id="passport-laser" style="background: linear-gradient(90deg, transparent, var(--color-success), transparent); box-shadow: 0 0 12px var(--color-success); z-index: 10;"></div>
+                                    
+                                    <div class="scanner-qrcode-overlay" id="scanner-qr-overlay" style="position: absolute; bottom: 10px; font-size: 0.65rem; color: #64748b; font-family: monospace;">
+                                        UID: EV-BAT-8092-NMC
+                                    </div>
+                                </div>
+                                
+                                <div class="action-buttons-group mt-4" style="width: 100%;">
+                                    <button class="btn btn-primary btn-block" id="btn-start-scan">
+                                        <i class="fa-solid fa-camera"></i> Initialize Holographic ESG Scan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Panel: ESG passport and recycling chemistry values -->
+                        <div class="card flex-col">
+                            <div class="card-header">
+                                <h3><i class="fa-solid fa-passport"></i> Digital Material Passport & Sustainability Lifecycle</h3>
+                            </div>
+                            <div class="card-body flex-1 flex-col justify-between" id="passport-body">
+                                
+                                <!-- Empty state prior to scan -->
+                                <div class="empty-state-results flex-col items-center justify-center flex-1" id="passport-empty-state" style="padding: 1.5rem;">
+                                    <i class="fa-solid fa-passport magic-icon-pulsing mb-3" style="color: var(--color-success); filter: drop-shadow(0 0 8px rgba(16,185,129,0.3));"></i>
+                                    <h4>ESG Digital Passport Locked</h4>
+                                    <p class="text-muted text-center max-w-sm mt-1" style="font-size: 0.8rem;">Initialize the holographic barcode scan on the left to verify mineral provenance receipts and chemistry lifecycles.</p>
+                                </div>
+
+                                <!-- Filled passport details -->
+                                <div class="results-layout hidden" id="passport-results" style="gap: 1rem;">
+                                    <!-- Chemistry breakdown -->
+                                    <div class="results-section">
+                                        <h4 class="section-sub-title"><i class="fa-solid fa-atom text-success"></i> Battery Cell Chemistry (NMC 811)</h4>
+                                        <div class="supplier-stats-grid mt-2" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                                            <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                                                <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Nickel</span>
+                                                <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">80%</span>
+                                            </div>
+                                            <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                                                <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Manganese</span>
+                                                <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">10%</span>
+                                            </div>
+                                            <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                                                <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Cobalt</span>
+                                                <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">10%</span>
+                                            </div>
+                                            <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                                                <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Lithium</span>
+                                                <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">100%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Circular Economy metrics -->
+                                    <div class="results-section">
+                                        <h4 class="section-sub-title"><i class="fa-solid fa-arrows-spin text-success"></i> Circular Lifecycle & SOH Metrics</h4>
+                                        <div class="supplier-stats-grid mt-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                            <div class="stat-item-box" style="padding: 0.65rem; border: 1px solid var(--border-muted); border-radius: 8px;">
+                                                <span class="stat-lbl" style="font-size: 0.65rem; color: #64748b; text-transform: uppercase;">Recyclability Index</span>
+                                                <span class="stat-val text-success" style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; display: block; margin-top: 0.25rem;">94.2%</span>
+                                            </div>
+                                            <div class="stat-item-box" style="padding: 0.65rem; border: 1px solid var(--border-muted); border-radius: 8px;">
+                                                <span class="stat-lbl" style="font-size: 0.65rem; color: #64748b; text-transform: uppercase;">Second-Life SOH Prediction</span>
+                                                <span class="stat-val text-success" style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; display: block; margin-top: 0.25rem;">Grade A (92% Health)</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Blockchain Ledger track -->
+                                    <div class="results-section">
+                                        <h4 class="section-sub-title"><i class="fa-solid fa-link text-success"></i> Scope 3 Blockchain Provenance</h4>
+                                        <div class="risk-bullets mt-2" style="font-size: 0.7rem; gap: 0.35rem; display: flex; flex-direction: column;">
+                                            <div style="display: flex; gap: 0.5rem; color: #cbd5e1;"><i class="fa-solid fa-check-double text-success"></i> <span>Extraction: Atacama Desert Lithium Mine (Ethical Sourcing Verified)</span></div>
+                                            <div style="display: flex; gap: 0.5rem; color: #cbd5e1;"><i class="fa-solid fa-check-double text-success"></i> <span>Smelting: Aussie Mineral Clean Smelter (Green Hydrogen Audit Verified)</span></div>
+                                            <div style="display: flex; gap: 0.5rem; color: #cbd5e1;"><i class="fa-solid fa-check-double text-success"></i> <span>Assembly: Pune Tab Welding Station 4 (Cp/Cpk: 1.54 Verified)</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Pitch Deck Modal Container -->
+    <div class="modal-overlay hidden" id="pitch-modal">
+        <div class="modal-card slide-editor-modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-file-powerpoint text-warning"></i> PowerPoint Presentation Builder (Official Template)</h3>
+                <button class="modal-close" id="pitch-modal-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body slide-editor-body">
+                <div class="slide-editor-workspace">
+                    <!-- Left Sidebar: Slide Navigation Thumbnails -->
+                    <div class="slide-thumbnails-sidebar">
+                        <div class="thumbnail active" data-slide="1">
+                            <span class="slide-num">1</span>
+                            <div class="thumb-preview">
+                                <span class="thumb-title">Title Slide</span>
+                            </div>
+                        </div>
+                        <div class="thumbnail" data-slide="2">
+                            <span class="slide-num">2</span>
+                            <div class="thumb-preview">
+                                <span class="thumb-title">Proposed Idea</span>
+                            </div>
+                        </div>
+                        <div class="thumbnail" data-slide="3">
+                            <span class="slide-num">3</span>
+                            <div class="thumb-preview">
+                                <span class="thumb-title">Impact & Scalability</span>
+                            </div>
+                        </div>
+                        <div class="thumbnail" data-slide="4">
+                            <span class="slide-num">4</span>
+                            <div class="thumb-preview">
+                                <span class="thumb-title">Tech Stack</span>
+                            </div>
+                        </div>
+                        <div class="thumbnail" data-slide="5">
+                            <span class="slide-num">5</span>
+                            <div class="thumb-preview">
+                                <span class="thumb-title">Video & Screenshots</span>
+                            </div>
+                        </div>
+                        <div class="thumbnail" data-slide="6">
+                            <span class="slide-num">6</span>
+                            <div class="thumb-preview">
+                                <span class="thumb-title">Why Considered</span>
+                            </div>
+                        </div>
+                        <div class="thumbnail" data-slide="7">
+                            <span class="slide-num">7</span>
+                            <div class="thumb-preview">
+                                <span class="thumb-title">Additional Info</span>
+                            </div>
+                        </div>
+                        <div class="thumbnail" data-slide="8">
+                            <span class="slide-num">8</span>
+                            <div class="thumb-preview">
+                                <span class="thumb-title">Thank You</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Center Editor Panel: PPTX visualizer -->
+                    <div class="slide-editor-canvas">
+                        <div class="editor-slide-viewport">
+                            <div class="slide-canvas-header">
+                                <input type="text" class="slide-title-input" id="editor-slide-title" value="ET AutoTech Hackathon 2026">
+                            </div>
+                            <div class="slide-canvas-body">
+                                <textarea class="slide-content-textarea" id="editor-slide-content" rows="10"></textarea>
+                            </div>
+                            <div class="slide-canvas-footer">
+                                <span>AegisFlow AI | Theme 1 Idea Submission</span>
+                                <span id="editor-slide-counter">Slide 1 of 8</span>
+                            </div>
+                        </div>
+                        <div class="editor-slide-actions">
+                            <button class="btn btn-outline btn-sm" id="btn-copy-slide"><i class="fa-regular fa-copy"></i> Copy Slide Text</button>
+                            <button class="btn btn-outline btn-sm" id="btn-download-slides-txt"><i class="fa-solid fa-download"></i> Download All Slide Text</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-tip" style="margin-right: auto; font-size: 0.75rem; color: #94a3b8;">
+                    <i class="fa-solid fa-lightbulb text-warning"></i> Pre-filled with AegisFlow technical details. Edit content & copy into your PPTX slides!
+                </div>
+                <button class="btn btn-primary" id="btn-close-modal-confirm">Got it, Let's continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inject main JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
