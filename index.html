@@ -460,10 +460,18 @@
                                 </div>
                             </div>
                             <div class="card-body relative bg-dark-viewport flex-col items-center justify-center">
-                                <div class="canvas-viewport">
+                                <div class="canvas-viewport" style="position: relative;">
                                     <!-- HTML5 Canvas for simulating live camera weld joints inspections -->
                                     <canvas id="weld-canvas" width="480" height="280"></canvas>
                                     
+                                    <!-- Edge detection visualizer overlay (Sobel filter buffer) -->
+                                    <div class="sobel-buffer-overlay" style="position: absolute; bottom: 10px; right: 10px; width: 140px; height: 90px; border: 1.5px solid var(--color-teal); border-radius: 4px; overflow: hidden; background: #000; box-shadow: 0 0 10px rgba(0,242,254,0.35); z-index: 5;">
+                                        <div style="font-size: 0.5rem; color: var(--color-teal); background: rgba(0,0,0,0.85); position: absolute; top: 0; left: 0; width: 100%; padding: 2px 4px; font-family: monospace; font-weight: bold; border-bottom: 0.5px solid var(--color-teal);">
+                                            SOBEL PROCESS FILTER
+                                        </div>
+                                        <canvas id="weld-sobel-canvas" width="140" height="90" style="display: block; width: 100%; height: 100%;"></canvas>
+                                    </div>
+
                                     <!-- Scan overlays -->
                                     <div class="scan-laser"></div>
                                     <div class="crosshair-center"></div>
@@ -554,12 +562,33 @@
                                 </div>
                             </div>
                             <div class="card-body">
-                                <div class="scatter-filters mb-4">
+                                <div class="scatter-filters mb-4" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                                     <div class="filter-group">
                                         <span class="filter-lbl">Filters:</span>
                                         <button class="btn btn-outline btn-xs active-btn" id="filter-all-suppliers">All Suppliers</button>
                                         <button class="btn btn-outline btn-xs" id="filter-low-gri">GRI &lt; 40%</button>
                                         <button class="btn btn-outline btn-xs" id="filter-high-esg">ESG Priority (A/B)</button>
+                                    </div>
+                                    <button class="btn btn-secondary btn-xs" id="btn-toggle-add-supplier"><i class="fa-solid fa-plus"></i> Register Supplier</button>
+                                </div>
+
+                                <!-- Add Supplier Form Panel (Hidden by default) -->
+                                <div id="add-supplier-panel" class="card hidden mb-4" style="background: rgba(7, 10, 19, 0.95); border: 1.5px solid var(--color-teal-glow); padding: 1rem; border-radius: 10px; box-shadow: var(--shadow-neon-teal);">
+                                    <h5 style="margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--color-teal); display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-square-plus"></i> Register New Sourcing Supplier</h5>
+                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.75rem;">
+                                        <input type="text" id="new-sup-name" placeholder="Supplier Name" class="form-control form-control-sm">
+                                        <input type="text" id="new-sup-loc" placeholder="Location (e.g. Pune, IN)" class="form-control form-control-sm">
+                                        <select id="new-sup-esg" class="form-control form-control-sm">
+                                            <option value="A">ESG Grade A</option>
+                                            <option value="B">ESG Grade B</option>
+                                            <option value="C">ESG Grade C</option>
+                                            <option value="D">ESG Grade D</option>
+                                        </select>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+                                        <input type="number" id="new-sup-lead" placeholder="Lead Time (Days)" class="form-control form-control-sm" min="1">
+                                        <input type="number" id="new-sup-gri" placeholder="Geopolitical Risk (GRI %)" class="form-control form-control-sm" min="0" max="100">
+                                        <button class="btn btn-primary btn-sm" id="btn-save-new-supplier"><i class="fa-solid fa-circle-check"></i> Add to Chart</button>
                                     </div>
                                 </div>
 
@@ -887,9 +916,16 @@
                     <div class="grid-2-col">
                         <!-- Left Panel: Scanner visual -->
                         <div class="card flex-col">
-                            <div class="card-header">
-                                <h3><i class="fa-solid fa-qrcode text-teal"></i> Passport-AI: Battery Pack QR Scanner</h3>
-                                <span class="badge badge-pulse" id="scanner-indicator">Scanner Ready</span>
+                            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                                <h3><i class="fa-solid fa-qrcode text-teal"></i> Passport-AI: QR Scanner</h3>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <select class="form-control form-control-sm" id="passport-uid-selector" style="width: 130px; font-size: 0.75rem; padding: 0.25rem 0.5rem; height: 26px;">
+                                        <option value="EV-BAT-8092-NMC">UID-8092 (NMC 811)</option>
+                                        <option value="EV-BAT-4412-LFP">UID-4412 (LFP Chemistry)</option>
+                                        <option value="EV-BAT-5590-SOLID">UID-5590 (Solid-State)</option>
+                                    </select>
+                                    <span class="badge badge-pulse" id="scanner-indicator">Scanner Ready</span>
+                                </div>
                             </div>
                             <div class="card-body relative bg-dark-viewport flex-1 flex-col items-center justify-center">
                                 <div class="battery-scan-container relative" style="width: 100%; max-width: 320px; height: 180px; border: 1.5px dashed var(--border-muted); border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.4);">

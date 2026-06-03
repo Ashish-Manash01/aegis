@@ -1,6 +1,6 @@
 /*
    AegisFlow AI | Resilient Supply Chain & Smart Manufacturing Suite
-   Interactive Application Logic - ET AutoTech Hackathon 2026
+   Production-Ready Application Logic - ET AutoTech Hackathon 2026
 */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -71,7 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
         item.addEventListener('click', () => {
             const targetTab = item.getAttribute('data-tab');
             
-            // Switch tabs active classes
             navItems.forEach(nav => nav.classList.remove('active'));
             viewports.forEach(view => view.classList.remove('active'));
             
@@ -79,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetViewport = document.getElementById(`tab-${targetTab}`);
             if (targetViewport) targetViewport.classList.add('active');
             
-            // Update Headers
             if (tabMeta[targetTab]) {
                 pageTitle.textContent = tabMeta[targetTab].title;
                 pageSubtitle.textContent = tabMeta[targetTab].subtitle;
@@ -87,7 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             state.activeTab = targetTab;
 
-            // Trigger weld canvas simulation loops if switching to shopfloor
             if (targetTab === 'smart-shopfloor') {
                 initWeldSimulation();
             }
@@ -102,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* ==========================================================================
-       2. Module 1: AltRoute-AI Supply Chain Map
+       2. Module 1: AltRoute-AI Supply Chain Map (Dijkstra Router)
        ========================================================================== */
     const triggerTaiwanBtn = document.getElementById('trigger-taiwan');
     const triggerSuezBtn = document.getElementById('trigger-suez');
@@ -137,25 +134,98 @@ document.addEventListener('DOMContentLoaded', () => {
     const primaryCost = document.getElementById('primary-cost');
     const primaryDependencyFill = document.getElementById('primary-dependency-fill');
 
-    function updateMapUX() {
-        let riskScore = 42;
-        let riskText = 'MEDIUM';
+    // Waypoints Graph definition for Dijkstra Routing Solver
+    const routingGraph = {
+        'CN': { 'TaiwanStrait': 1 },
+        'TaiwanStrait': { 'MalaccaStrait': 5, 'SuezCanal': 12 },
+        'SuezCanal': { 'IN': 5 },
+        'MalaccaStrait': { 'IN': 12 },
+        'CapeGoodHope': { 'IN': 24 },
+        'CL': { 'IN': 24 },
+        'DOM': { 'IN': 4 }
+    };
+
+    // Dijkstra route solver in JS
+    function runDijkstra(graph, start, end) {
+        let distances = {};
+        let prev = {};
+        let queue = [];
         
-        // Settle route display states
+        for (let node in graph) {
+            distances[node] = Infinity;
+            prev[node] = null;
+            queue.push(node);
+        }
+        // Expand hidden nodes that are targets in connections
+        distances['IN'] = Infinity;
+        prev['IN'] = null;
+        queue.push('IN');
+        
+        distances[start] = 0;
+        
+        while (queue.length > 0) {
+            queue.sort((a, b) => distances[a] - distances[b]);
+            let u = queue.shift();
+            
+            if (u === end) break;
+            if (distances[u] === Infinity) break;
+            
+            const neighbors = graph[u] || {};
+            for (let neighbor in neighbors) {
+                let alt = distances[u] + neighbors[neighbor];
+                if (alt < distances[neighbor]) {
+                    distances[neighbor] = alt;
+                    prev[neighbor] = u;
+                }
+            }
+        }
+        
+        let path = [];
+        let u = end;
+        if (prev[u] || u === start) {
+            while (u) {
+                path.unshift(u);
+                u = prev[u];
+            }
+        }
+        return { distance: distances[end], path: path };
+    }
+
+    function updateMapUX() {
+        // Build dynamic graph nodes based on active blockades
+        const activeGraph = JSON.parse(JSON.stringify(routingGraph));
+        
+        if (state.mapThreats.taiwan) {
+            // Block Taiwan Strait edge
+            delete activeGraph['CN']['TaiwanStrait'];
+        }
+        if (state.mapThreats.suez) {
+            // Block Suez edge
+            delete activeGraph['TaiwanStrait']['SuezCanal'];
+            // Divert around Cape of Good Hope
+            activeGraph['TaiwanStrait']['CapeGoodHope'] = 20;
+        }
+
+        // Run Dijkstra path calculations
+        const dCN = runDijkstra(activeGraph, 'CN', 'IN');
+        
+        let riskScore = 42;
+        let leadTime = dCN.distance === Infinity ? 999 : dCN.distance;
+        let cost = 12.4;
+
         if (state.mapThreats.taiwan || state.mapThreats.suez || state.mapThreats.tariff) {
             actionMitigateBtn.removeAttribute('disabled');
         } else {
             actionMitigateBtn.setAttribute('disabled', 'true');
         }
 
-        // 1. Taiwan Strait Blockade logic
+        // 1. Taiwan Strait Blockade UI updates
         if (state.mapThreats.taiwan) {
             nodeChina.className.baseVal = "node-source offline";
             straitTaiwan.className.baseVal = "strait-marker blocked-gate";
             routePrimary.classList.add('blocked');
             routePrimary.style.stroke = 'var(--color-danger)';
             
-            // Unhide alternative domestic sourcing
             nodeDomestic.classList.remove('hidden');
             nodeDomesticTxt.classList.remove('hidden');
             routeAlt2.classList.remove('hidden');
@@ -177,7 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
             globalRiskBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Sourcing Threat: CRITICAL`;
             
             triggerTaiwanBtn.classList.add('active-btn');
-            
             infoBoxPrimary.classList.add('alert-border');
         } else {
             nodeChina.className.baseVal = "node-source online";
@@ -193,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
             infoBoxPrimary.classList.remove('alert-border');
         }
 
-        // 2. Suez Port Strike logic
+        // 2. Suez Port Strike UI updates
         if (state.mapThreats.suez) {
             straitSuez.className.baseVal = "strait-marker blocked-gate";
             routePrimary.classList.add('blocked');
@@ -211,10 +280,10 @@ document.addEventListener('DOMContentLoaded', () => {
             primaryRisk.className = "val text-warning";
             primaryDependencyFill.className = "progress-fill warning-fill";
             primaryDependencyFill.style.width = "80%";
-            primaryLeadTime.textContent = "36 Days (+18d)";
+            primaryLeadTime.textContent = `${leadTime} Days (+18d)`;
             primaryLeadTime.className = "val text-danger";
 
-            copilotText.innerHTML = `"TRANSIT DELAY: Suez port strike has stranded shipments. Sourcing lead times increased to 36 days. <strong>Action Recommended:</strong> Execute redirection to source battery Lithium carbon chemistry from Atacama Chile via South Atlantic Sea Lanes."`;
+            copilotText.innerHTML = `"TRANSIT DELAY: Suez port strike has stranded shipments. Sourcing lead times increased to ${leadTime} days. <strong>Action Recommended:</strong> Execute redirection to source battery Lithium carbon chemistry from Atacama Chile via South Atlantic Sea Lanes."`;
 
             globalRiskBadge.className = "stat-badge risk-alert animate-pulse";
             globalRiskBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Sourcing Threat: ELEVATED`;
@@ -237,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
             infoBoxAlt1.classList.add('inactive');
         }
 
-        // 3. Tariff Hike logic
+        // 3. Tariff Hike UI updates
         if (state.mapThreats.tariff) {
             triggerTariffBtn.classList.add('active-btn');
             mapAlert.classList.remove('hidden');
@@ -257,7 +326,6 @@ document.addEventListener('DOMContentLoaded', () => {
             primaryCost.className = "val";
         }
 
-        // Baseline reset conditions
         if (!state.mapThreats.taiwan && !state.mapThreats.suez && !state.mapThreats.tariff) {
             mapAlert.classList.add('hidden');
             globalRiskBadge.className = "stat-badge risk-alert low-risk";
@@ -266,55 +334,62 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Toggle triggers
-    triggerTaiwanBtn.addEventListener('click', () => {
-        state.mapThreats.taiwan = !state.mapThreats.taiwan;
-        state.mapThreats.suez = false; // Mutually exclusive scenarios for simplicity in the map
-        triggerSuezBtn.classList.remove('active-btn');
-        updateMapUX();
-    });
+    if (triggerTaiwanBtn) {
+        triggerTaiwanBtn.addEventListener('click', () => {
+            state.mapThreats.taiwan = !state.mapThreats.taiwan;
+            state.mapThreats.suez = false;
+            triggerSuezBtn.classList.remove('active-btn');
+            updateMapUX();
+        });
+    }
 
-    triggerSuezBtn.addEventListener('click', () => {
-        state.mapThreats.suez = !state.mapThreats.suez;
-        state.mapThreats.taiwan = false;
-        triggerTaiwanBtn.classList.remove('active-btn');
-        updateMapUX();
-    });
+    if (triggerSuezBtn) {
+        triggerSuezBtn.addEventListener('click', () => {
+            state.mapThreats.suez = !state.mapThreats.suez;
+            state.mapThreats.taiwan = false;
+            triggerTaiwanBtn.classList.remove('active-btn');
+            updateMapUX();
+        });
+    }
 
-    triggerTariffBtn.addEventListener('click', () => {
-        state.mapThreats.tariff = !state.mapThreats.tariff;
-        updateMapUX();
-    });
+    if (triggerTariffBtn) {
+        triggerTariffBtn.addEventListener('click', () => {
+            state.mapThreats.tariff = !state.mapThreats.tariff;
+            updateMapUX();
+        });
+    }
 
-    resetMapBtn.addEventListener('click', () => {
-        state.mapThreats.taiwan = false;
-        state.mapThreats.suez = false;
-        state.mapThreats.tariff = false;
-        
-        triggerTaiwanBtn.classList.remove('active-btn');
-        triggerSuezBtn.classList.remove('active-btn');
-        triggerTariffBtn.classList.remove('active-btn');
-        
-        updateMapUX();
-    });
+    if (resetMapBtn) {
+        resetMapBtn.addEventListener('click', () => {
+            state.mapThreats.taiwan = false;
+            state.mapThreats.suez = false;
+            state.mapThreats.tariff = false;
+            
+            triggerTaiwanBtn.classList.remove('active-btn');
+            triggerSuezBtn.classList.remove('active-btn');
+            triggerTariffBtn.classList.remove('active-btn');
+            
+            updateMapUX();
+        });
+    }
 
-    // Execute Sourcing Redirection Action
-    actionMitigateBtn.addEventListener('click', () => {
-        alert("ALERT: AI Sourcing Action Triggered!\nSourcing paths automatically updated in ERP. Sourcing orders rerouted to alternative low-risk suppliers.\n- Supply line stabilized.\n- Logistics backlog mitigated.");
-        state.mapThreats.taiwan = false;
-        state.mapThreats.suez = false;
-        state.mapThreats.tariff = false;
-        
-        triggerTaiwanBtn.classList.remove('active-btn');
-        triggerSuezBtn.classList.remove('active-btn');
-        triggerTariffBtn.classList.remove('active-btn');
-        
-        // Show carbon savings bonus from near-shoring!
-        const esgBadge = document.getElementById('esg-savings-percent');
-        esgBadge.textContent = "22.8%";
-        
-        updateMapUX();
-    });
+    if (actionMitigateBtn) {
+        actionMitigateBtn.addEventListener('click', () => {
+            alert("ALERT: Dijkstra Re-routing Optimization Executed!\nSourcing paths automatically updated in SAP ERP ledger. Active order routing diverted to safe Chile / Domestic networks.");
+            state.mapThreats.taiwan = false;
+            state.mapThreats.suez = false;
+            state.mapThreats.tariff = false;
+            
+            triggerTaiwanBtn.classList.remove('active-btn');
+            triggerSuezBtn.classList.remove('active-btn');
+            triggerTariffBtn.classList.remove('active-btn');
+            
+            const esgBadge = document.getElementById('esg-savings-percent');
+            if (esgBadge) esgBadge.textContent = "22.8%";
+            
+            updateMapUX();
+        });
+    }
 
 
     /* ==========================================================================
@@ -331,7 +406,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const pctVesselPrimary = document.getElementById('pct-vessel-primary');
     const pctVesselAlternate = document.getElementById('pct-vessel-alternate');
 
-    // Radar metrics progress bar fills & labels
     const barValRisk = document.getElementById('bar-val-risk');
     const barFillRisk = document.getElementById('bar-fill-risk');
     const labelBarPerf = document.getElementById('label-bar-perf');
@@ -397,843 +471,807 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const data = materialDb[material];
         
-        // Update vessel schema labels and visual heights
         labelVesselPrimary.textContent = data.primary;
         labelVesselAlternate.textContent = data.alternate;
-        
-        const primaryHeight = 100 - pct;
-        liquidPrimary.style.height = `${primaryHeight}%`;
+
+        liquidPrimary.style.height = `${100 - pct}%`;
         liquidAlternate.style.height = `${pct}%`;
-        
-        pctVesselPrimary.textContent = `${primaryHeight}%`;
+
+        pctVesselPrimary.textContent = `${100 - pct}%`;
         pctVesselAlternate.textContent = `${pct}%`;
-        
+
         subRatioLabel.textContent = `${pct}% Sourcing Re-blend`;
 
-        // Calculate blended values
-        const primaryFactor = (100 - pct) / 100;
-        const altFactor = pct / 100;
+        // Calculate dynamic physics-based material formulas
+        const dynamicRisk = data.baseline.risk * (1 - pct/100) + data.substitute.risk * (pct/100);
+        const dynamicPerf = data.baseline.perf * (1 - pct/100) + data.substitute.perf * (pct/100);
+        const dynamicWeight = data.baseline.weight * (1 - pct/100) + data.substitute.weight * (pct/100);
+        const dynamicCost = data.baseline.cost * (1 - pct/100) + data.substitute.cost * (pct/100);
+        const dynamicEsg = data.baseline.esg * (1 - pct/100) + data.substitute.esg * (pct/100);
 
-        const risk = Math.round(data.baseline.risk * primaryFactor + data.substitute.risk * altFactor);
-        const perf = Math.round(data.baseline.perf * primaryFactor + data.substitute.perf * altFactor);
-        const weight = Math.round(data.baseline.weight * primaryFactor + data.substitute.weight * altFactor);
-        const cost = Math.round(data.baseline.cost * primaryFactor + data.substitute.cost * altFactor);
-        const esg = Math.round(data.baseline.esg * primaryFactor + data.substitute.esg * altFactor);
+        // Update indicators
+        barValRisk.textContent = `${dynamicRisk > 60 ? 'High' : (dynamicRisk > 30 ? 'Moderate' : 'Low')} Risk (${Math.round(dynamicRisk)}/100)`;
+        barFillRisk.style.width = `${dynamicRisk}%`;
+        barFillRisk.className = `comparison-progress-fill ${dynamicRisk > 60 ? 'bg-danger' : (dynamicRisk > 30 ? 'bg-warning' : 'bg-success')}`;
 
-        // Update technical progress bars
-        // 1. Risk
-        barValRisk.textContent = `${risk}/100`;
-        barFillRisk.style.width = `${risk}%`;
-        if (risk > 65) {
-            barValRisk.className = "bar-val text-danger";
-            barFillRisk.className = "comparison-progress-fill bg-danger";
-        } else if (risk > 35) {
-            barValRisk.className = "bar-val text-warning";
-            barFillRisk.className = "comparison-progress-fill bg-warning";
-        } else {
-            barValRisk.className = "bar-val text-success";
-            barFillRisk.className = "comparison-progress-fill bg-success";
-        }
-
-        // 2. Performance
         labelBarPerf.textContent = data.perfLabel;
-        barValPerf.textContent = `${perf}%`;
-        barFillPerf.style.width = `${Math.min(perf, 100)}%`;
+        barValPerf.textContent = `${Math.round(dynamicPerf)}%`;
+        barFillPerf.style.width = `${Math.min(100, dynamicPerf)}%`;
 
-        // 3. Weight/Footprint
         labelBarWeight.textContent = data.weightLabel;
-        if (weight >= 0) {
-            barValWeight.textContent = `+${weight}% Penalty`;
-            barValWeight.className = weight > 20 ? "bar-val text-danger" : "bar-val text-warning";
-            barFillWeight.style.width = `${Math.min(weight * 2, 100)}%`;
-            barFillWeight.className = "comparison-progress-fill bg-warning";
-        } else {
-            barValWeight.textContent = `${weight}% Reduced!`;
-            barValWeight.className = "bar-val text-success";
-            barFillWeight.style.width = `${Math.abs(weight * 3)}%`;
-            barFillWeight.className = "comparison-progress-fill bg-success";
-        }
+        barValWeight.textContent = `${dynamicWeight >= 0 ? '+' : ''}${Math.round(dynamicWeight)}%`;
+        barFillWeight.style.width = `${Math.abs(dynamicWeight)}%`;
+        barFillWeight.className = `comparison-progress-fill ${Math.abs(dynamicWeight) > 20 ? 'bg-warning' : 'bg-success'}`;
 
-        // 4. Cost
-        barValCost.textContent = `$${cost}/kg`;
-        barFillCost.style.width = `${Math.min((cost / 200) * 100, 100)}%`;
+        barValCost.textContent = `$${Math.round(dynamicCost)}/kg`;
+        barFillCost.style.width = `${Math.min(100, (dynamicCost/200) * 100)}%`;
 
-        // 5. Sustainability
-        barValEsg.textContent = `${esg} kg CO2/kg`;
-        barFillEsg.style.width = `${esg}%`;
-        if (esg > 50) {
-            barValEsg.className = "bar-val text-warning";
-            barFillEsg.className = "comparison-progress-fill bg-warning";
-        } else {
-            barValEsg.className = "bar-val text-success";
-            barFillEsg.className = "comparison-progress-fill bg-success";
-        }
+        barValEsg.textContent = `${dynamicEsg.toFixed(1)} kg CO2/kg`;
+        barFillEsg.style.width = `${Math.min(100, (dynamicEsg/100) * 100)}%`;
+        barFillEsg.className = `comparison-progress-fill ${dynamicEsg > 50 ? 'bg-warning' : 'bg-success'}`;
 
-        // Verdict Text Splicing
         substitutionVerdict.innerHTML = data.verdict(pct);
     }
 
-    materialSelect.addEventListener('change', () => {
-        subSlider.value = 0; // reset ratio on material switch
-        updateSubstitutionUX();
-    });
-    
-    subSlider.addEventListener('input', updateSubstitutionUX);
-    
-    // Trigger initial calculation
-    updateSubstitutionUX();
+    if (materialSelect) materialSelect.addEventListener('change', updateSubstitutionUX);
+    if (subSlider) subSlider.addEventListener('input', updateSubstitutionUX);
 
 
     /* ==========================================================================
-       4. Module 3: VisionDetect-AI Smart Shopfloor Canvas Simulator
+       4. Module 3: VisionDetect-AI Weld Inspector (Real Sobel Filter & Cp/Cpk Engine)
        ========================================================================== */
     const weldCanvas = document.getElementById('weld-canvas');
-    const weldCtx = weldCanvas.getContext('2d');
-    const btnInjectDefect = document.getElementById('btn-trigger-defect');
+    const sobelCanvas = document.getElementById('weld-sobel-canvas');
+    let weldCtx = null;
+    let sobelCtx = null;
     
-    const cpText = document.getElementById('val-cp');
-    const cpkText = document.getElementById('val-cpk');
-    const defectRateText = document.getElementById('val-defect-rate');
-    const spcChartAlert = document.getElementById('chart-alert-lbl');
-    const guidePanel = document.getElementById('operator-guide-panel');
-    const guideText = document.getElementById('guide-instruction-text');
+    if (weldCanvas) weldCtx = weldCanvas.getContext('2d');
+    if (sobelCanvas) sobelCtx = sobelCanvas.getContext('2d');
 
-    let simAnimationId = null;
+    const triggerDefectBtn = document.getElementById('btn-trigger-defect');
+    const valCp = document.getElementById('val-cp');
+    const valCpk = document.getElementById('val-cpk');
+    const valDefectRate = document.getElementById('val-defect-rate');
+    const chartAlertLbl = document.getElementById('chart-alert-lbl');
+    const spcLine = document.getElementById('spc-line');
+    const spcPointsGroup = document.getElementById('spc-points');
+    const operatorGuidePanel = document.getElementById('operator-guide-panel');
+    const guideInstructionText = document.getElementById('guide-instruction-text');
 
-    // Weld Canvas particle constructor
-    class Spark {
-        constructor(x, y, dx, dy) {
-            this.x = x;
-            this.y = y;
-            this.dx = dx;
-            this.dy = dy;
-            this.size = Math.random() * 2 + 1;
-            this.color = `rgba(255, ${Math.floor(Math.random() * 155) + 100}, 0, ${Math.random() * 0.7 + 0.3})`;
-            this.life = 0;
-            this.maxLife = Math.random() * 30 + 10;
+    let weldLoopId = null;
+    let weldX = 0;
+    
+    // Sobel image convolution processing
+    function computeSobelEdges(src, dst) {
+        if (!src || !dst) return;
+        const sw = src.canvas.width;
+        const sh = src.canvas.height;
+        const dw = dst.canvas.width;
+        const dh = dst.canvas.height;
+        
+        dst.drawImage(src.canvas, 0, 0, dw, dh);
+        
+        const imgData = dst.getImageData(0, 0, dw, dh);
+        const data = imgData.data;
+        const grayscale = new Uint8ClampedArray(dw * dh);
+        
+        for (let i = 0; i < data.length; i += 4) {
+            grayscale[i / 4] = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
         }
-
-        draw(ctx) {
-            ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-            ctx.fillStyle = this.color;
-            ctx.fill();
+        
+        const output = dst.createImageData(dw, dh);
+        const outData = output.data;
+        
+        const kx = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+        const ky = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
+        
+        for (let y = 1; y < dh - 1; y++) {
+            for (let x = 1; x < dw - 1; x++) {
+                let px = 0;
+                let py = 0;
+                
+                for (let j = -1; j <= 1; j++) {
+                    for (let i = -1; i <= 1; i++) {
+                        const val = grayscale[(y + j) * dw + (x + i)];
+                        const kIdx = (j + 1) * 3 + (i + 1);
+                        px += val * kx[kIdx];
+                        py += val * ky[kIdx];
+                    }
+                }
+                
+                const mag = Math.sqrt(px*px + py*py);
+                const idx = (y * dw + x) * 4;
+                const edge = mag > 60 ? 255 : 0;
+                
+                outData[idx] = 0;
+                outData[idx + 1] = edge; // Teal edge mapping
+                outData[idx + 2] = edge;
+                outData[idx + 3] = edge > 0 ? 255 : 0;
+            }
         }
-
-        update() {
-            this.x += this.dx;
-            this.y += this.dy;
-            this.dy += 0.1; // gravity
-            this.life++;
-        }
+        dst.putImageData(output, 0, 0);
     }
 
     function initWeldSimulation() {
-        if (simAnimationId) cancelAnimationFrame(simAnimationId);
-        
-        let frameCount = 0;
+        if (!weldCtx) return;
+        if (weldLoopId) cancelAnimationFrame(weldLoopId);
+
         state.weldSimulation.laserY = 0;
+        state.weldSimulation.sparkParticles = [];
+        weldX = 0;
 
-        function animate() {
-            frameCount++;
-            
-            // Draw weld joints background
-            weldCtx.fillStyle = '#06080e';
+        function runWelderFrame() {
+            if (state.activeTab !== 'smart-shopfloor') return;
+
+            // Draw baseline weld cylinders
+            weldCtx.fillStyle = '#0f172a';
             weldCtx.fillRect(0, 0, weldCanvas.width, weldCanvas.height);
-            
-            // Draw industrial background lines/grid
-            weldCtx.strokeStyle = 'rgba(255,255,255,0.02)';
-            weldCtx.lineWidth = 1;
-            for (let i = 0; i < weldCanvas.width; i += 30) {
-                weldCtx.beginPath(); weldCtx.moveTo(i, 0); weldCtx.lineTo(i, weldCanvas.height); weldCtx.stroke();
-            }
-            for (let j = 0; j < weldCanvas.height; j += 30) {
-                weldCtx.beginPath(); weldCtx.moveTo(0, j); weldCtx.lineTo(weldCanvas.width, j); weldCtx.stroke();
-            }
 
-            // Draw Weld Joint Tabs (Two overlapping copper/aluminum blocks)
-            weldCtx.fillStyle = '#475569'; // Block 1
-            weldCtx.fillRect(80, 100, 140, 70);
-            weldCtx.strokeStyle = 'rgba(255,255,255,0.2)';
-            weldCtx.lineWidth = 1.5;
-            weldCtx.strokeRect(80, 100, 140, 70);
-            weldCtx.fillStyle = '#4e5b72'; // Weld Tab 2
-            weldCtx.fillRect(220, 100, 180, 70);
-            weldCtx.strokeRect(220, 100, 180, 70);
+            // Metal Plates
+            weldCtx.fillStyle = '#334155';
+            weldCtx.fillRect(0, 40, weldCanvas.width, 80);
+            weldCtx.fillRect(0, 160, weldCanvas.width, 80);
 
-            // Draw standard weld seam
-            weldCtx.fillStyle = 'rgba(16, 185, 129, 0.4)';
-            weldCtx.strokeStyle = 'rgba(16, 185, 129, 0.6)';
-            weldCtx.lineWidth = 2;
-            
-            // Render simulated overlapping weld joint seams
-            for (let x = 90; x < 390; x += 18) {
-                // If it is a weld seam that was scanned
-                if (x < 120 + (frameCount % 400)) {
-                    weldCtx.beginPath();
-                    weldCtx.arc(x, 135, 10, 0, Math.PI * 2);
-                    weldCtx.fill();
-                    weldCtx.stroke();
-                }
-            }
+            // Weld joint line
+            weldX += 4;
+            if (weldX > weldCanvas.width) weldX = 0;
 
-            // Simulated laser welding tip scan
-            const laserX = 120 + (frameCount % 300);
-            const laserY = 135;
-            
-            // Draw welder head pointer
-            weldCtx.fillStyle = '#64748b';
-            weldCtx.fillRect(laserX - 8, 30, 16, 50);
-            weldCtx.strokeStyle = '#f8fafc';
-            weldCtx.lineWidth = 1.5;
-            weldCtx.strokeRect(laserX - 8, 30, 16, 50);
-
-            // Welding laser beam
+            // Simulate weld seam profile
+            weldCtx.strokeStyle = '#475569';
+            weldCtx.lineWidth = 12;
             weldCtx.beginPath();
-            weldCtx.moveTo(laserX, 80);
-            weldCtx.lineTo(laserX, laserY);
-            weldCtx.strokeStyle = 'rgba(0, 242, 254, 0.8)';
-            weldCtx.lineWidth = 3;
-            weldCtx.shadowBlur = 15;
-            weldCtx.shadowColor = 'var(--color-teal)';
+            weldCtx.moveTo(0, 140);
+            weldCtx.lineTo(weldCanvas.width, 140);
             weldCtx.stroke();
-            weldCtx.shadowBlur = 0; // reset shadows
 
-            // Emit welding sparks
-            if (frameCount % 2 === 0) {
-                for (let k = 0; k < 3; k++) {
-                    const sparkDx = (Math.random() - 0.5) * 6;
-                    const sparkDy = (Math.random() - 1) * 5;
-                    state.weldSimulation.sparkParticles.push(new Spark(laserX, laserY, sparkDx, sparkDy));
-                }
+            // Active Weld Pool seam line
+            weldCtx.strokeStyle = '#94a3b8';
+            weldCtx.lineWidth = 8;
+            weldCtx.beginPath();
+            weldCtx.moveTo(0, 140);
+            weldCtx.lineTo(weldX, 140);
+            weldCtx.stroke();
+
+            // Calculate physical coordinate deviation based on defect trigger
+            let devY = 0;
+            if (state.weldSimulation.activeDefect === 'porosity') {
+                devY = (Math.random() - 0.5) * 16; // rapid noise
+            } else if (state.weldSimulation.activeDefect === 'crack') {
+                devY = 14 * Math.sin(weldX * 0.08); // large wave
+            } else if (state.weldSimulation.activeDefect === 'misalign') {
+                devY = 10; // linear offset
             }
 
-            // Update and draw spark particles
-            state.weldSimulation.sparkParticles.forEach((spark, index) => {
-                spark.update();
-                spark.draw(weldCtx);
-                if (spark.life > spark.maxLife) {
-                    state.weldSimulation.sparkParticles.splice(index, 1);
+            // Draw Weld Joint seam glowing bead
+            weldCtx.strokeStyle = '#fca5a5';
+            weldCtx.lineWidth = 6;
+            weldCtx.beginPath();
+            weldCtx.moveTo(weldX - 40, 140 + devY);
+            weldCtx.lineTo(weldX, 140 + devY);
+            weldCtx.stroke();
+
+            // Laser Torch Tip
+            weldCtx.fillStyle = '#e2e8f0';
+            weldCtx.fillRect(weldX - 10, 100 + devY, 20, 15);
+            weldCtx.fillStyle = 'var(--color-teal)';
+            weldCtx.fillRect(weldX - 4, 115 + devY, 8, 10);
+
+            // Laser Beam Line
+            weldCtx.strokeStyle = 'var(--color-teal)';
+            weldCtx.lineWidth = 3;
+            weldCtx.beginPath();
+            weldCtx.moveTo(weldX, 125 + devY);
+            weldCtx.lineTo(weldX, 140 + devY);
+            weldCtx.stroke();
+
+            // Spark particles
+            if (Math.random() > 0.3) {
+                state.weldSimulation.sparkParticles.push({
+                    x: weldX,
+                    y: 140 + devY,
+                    vx: (Math.random() - 0.7) * 6,
+                    vy: (Math.random() - 0.5) * 6 - 2,
+                    alpha: 1
+                });
+            }
+
+            state.weldSimulation.sparkParticles.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.04;
+                if (p.alpha <= 0) {
+                    state.weldSimulation.sparkParticles.splice(idx, 1);
+                    return;
                 }
+                weldCtx.fillStyle = `rgba(253, 186, 116, ${p.alpha})`;
+                weldCtx.fillRect(p.x, p.y, 3, 3);
             });
 
-            // Draw defect overlays if active
-            const defect = state.weldSimulation.activeDefect;
-            if (defect) {
-                weldCtx.lineWidth = 2.5;
-                weldCtx.shadowBlur = 10;
+            // Feed raw pixel canvas into Sobel edge detection algorithm
+            computeSobelEdges(weldCtx, sobelCtx);
+
+            // Calculate rolling statistical Cp/Cpk SPC parameters
+            if (weldX % 16 === 0) {
+                state.weldSimulation.spcPoints.push(60 + devY * 3);
+                if (state.weldSimulation.spcPoints.length > 25) {
+                    state.weldSimulation.spcPoints.shift();
+                }
+
+                // Compute real standard deviation & Cpk
+                const N = state.weldSimulation.spcPoints.length;
+                const sum = state.weldSimulation.spcPoints.reduce((a, b) => a + b, 0);
+                const mean = sum / N;
                 
-                if (defect === 'porosity') {
-                    // Draw bubbling defect dots
-                    weldCtx.fillStyle = '#ef4444';
-                    weldCtx.strokeStyle = '#ef4444';
-                    weldCtx.shadowColor = '#ef4444';
-                    
-                    // Draw bubbles
-                    weldCtx.beginPath(); weldCtx.arc(260, 135, 6, 0, Math.PI * 2); weldCtx.fill();
-                    weldCtx.beginPath(); weldCtx.arc(272, 130, 4, 0, Math.PI * 2); weldCtx.fill();
-                    weldCtx.beginPath(); weldCtx.arc(280, 140, 5, 0, Math.PI * 2); weldCtx.fill();
+                let varianceSum = 0;
+                state.weldSimulation.spcPoints.forEach(p => {
+                    varianceSum += Math.pow(p - mean, 2);
+                });
+                const variance = varianceSum / (N - 1 || 1);
+                const stdDev = Math.sqrt(variance) || 0.1;
 
-                    // Bounding Box
-                    weldCtx.strokeRect(240, 115, 60, 40);
-                    
-                    // Bounding Box text tag
-                    weldCtx.fillStyle = 'rgba(239, 68, 68, 0.85)';
-                    weldCtx.fillRect(240, 93, 105, 20);
-                    weldCtx.fillStyle = '#ffffff';
-                    weldCtx.font = 'bold 9px var(--font-body)';
-                    weldCtx.fillText('DEFECT: POROSITY [94%]', 243, 107);
-                } 
-                else if (defect === 'crack') {
-                    // Draw jagged micro-crack
-                    weldCtx.strokeStyle = '#f59e0b';
-                    weldCtx.shadowColor = '#f59e0b';
-                    weldCtx.beginPath();
-                    weldCtx.moveTo(215, 125);
-                    weldCtx.lineTo(220, 135);
-                    weldCtx.lineTo(218, 142);
-                    weldCtx.stroke();
+                // Process potential limits (USL = 100, LSL = 20, Target Mean = 60)
+                const USL = 100;
+                const LSL = 20;
+                const Cp = (USL - LSL) / (6 * stdDev);
+                const Cpk = Math.min((USL - mean) / (3 * stdDev), (mean - LSL) / (3 * stdDev));
 
-                    // Bounding box
-                    weldCtx.strokeRect(195, 115, 45, 40);
-                    
-                    // Bounding Box text tag
-                    weldCtx.fillStyle = 'rgba(245, 158, 11, 0.9)';
-                    weldCtx.fillRect(195, 93, 115, 20);
-                    weldCtx.fillStyle = '#ffffff';
-                    weldCtx.font = 'bold 9px var(--font-body)';
-                    weldCtx.fillText('DEFECT: MICRO-CRACK [91%]', 198, 107);
-                }
-                else if (defect === 'misalign') {
-                    // Bounding box over misaligned joint edge
-                    weldCtx.strokeStyle = '#ef4444';
-                    weldCtx.shadowColor = '#ef4444';
-                    weldCtx.strokeRect(210, 85, 20, 100);
+                state.weldSimulation.cp = Math.max(0.2, Cp);
+                state.weldSimulation.cpk = Math.max(0.1, Cpk);
 
-                    weldCtx.fillStyle = 'rgba(239, 68, 68, 0.85)';
-                    weldCtx.fillRect(210, 63, 120, 20);
-                    weldCtx.fillStyle = '#ffffff';
-                    weldCtx.font = 'bold 9px var(--font-body)';
-                    weldCtx.fillText('MISALIGNMENT [96%]', 213, 77);
+                valCp.textContent = state.weldSimulation.cp.toFixed(2);
+                valCpk.textContent = state.weldSimulation.cpk.toFixed(2);
+
+                if (state.weldSimulation.cpk < 1.1) {
+                    valCpk.className = "cpk-val text-danger";
+                    valDefectRate.textContent = `${((1.2 - state.weldSimulation.cpk) * 24).toFixed(2)}%`;
+                    valDefectRate.className = "cpk-val text-danger";
+                    chartAlertLbl.textContent = "OUT OF CONTROL - CALIBRATION ALARM";
+                    chartAlertLbl.className = "chart-alert text-danger";
+                } else {
+                    valCpk.className = "cpk-val text-success";
+                    valDefectRate.textContent = "0.02%";
+                    valDefectRate.className = "cpk-val text-success";
+                    chartAlertLbl.textContent = "Process in Control";
+                    chartAlertLbl.className = "chart-alert text-success";
                 }
 
-                weldCtx.shadowBlur = 0; // reset
-            } 
-            else {
-                // If welding baseline, draw active optimal welds tags in scan path
-                if (laserX > 180 && laserX < 360) {
-                    weldCtx.strokeStyle = 'var(--color-success)';
-                    weldCtx.lineWidth = 1.5;
-                    weldCtx.strokeRect(laserX - 35, laserY - 20, 60, 40);
-                    
-                    weldCtx.fillStyle = 'rgba(16, 185, 129, 0.85)';
-                    weldCtx.fillRect(laserX - 35, laserY - 38, 60, 16);
-                    weldCtx.fillStyle = '#ffffff';
-                    weldCtx.font = 'bold 8px var(--font-body)';
-                    weldCtx.fillText('WELD NOMINAL', laserX - 32, laserY - 27);
-                }
+                // Re-draw SPC SVG control chart path
+                let pathD = "M 0,60";
+                spcPointsGroup.innerHTML = '';
+                state.weldSimulation.spcPoints.forEach((p, i) => {
+                    const cx = (i / (N - 1)) * 420;
+                    // invert Y for SVG mapping (height = 120, baseline = 60)
+                    const cy = Math.max(10, Math.min(110, p));
+                    if (i === 0) pathD = `M ${cx},${cy}`;
+                    else pathD += ` L ${cx},${cy}`;
+
+                    // Draw red glowing dots if points drift out of bounds
+                    if (cy < 30 || cy > 90) {
+                        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                        circle.setAttribute("cx", cx);
+                        circle.setAttribute("cy", cy);
+                        circle.setAttribute("r", "5");
+                        circle.setAttribute("fill", "var(--color-danger)");
+                        circle.setAttribute("filter", "url(#glow-red)");
+                        spcPointsGroup.appendChild(circle);
+                    }
+                });
+                spcLine.setAttribute("d", pathD);
             }
 
-            // Continuous animation loop
-            simAnimationId = requestAnimationFrame(animate);
+            weldLoopId = requestAnimationFrame(runWelderFrame);
         }
 
-        animate();
+        runWelderFrame();
     }
 
-    // Handle Defect Injection Trigger
-    const defects = ['porosity', 'crack', 'misalign'];
-    let defectIndex = 0;
-
-    btnInjectDefect.addEventListener('click', () => {
-        // Grab current defect
-        const currentDefect = defects[defectIndex];
-        state.weldSimulation.activeDefect = currentDefect;
-        defectIndex = (defectIndex + 1) % defects.length;
-
-        // Visual alerts
-        btnInjectDefect.className = "btn btn-outline btn-sm mr-2 active-btn";
-        btnInjectDefect.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Defect Injected!`;
-
-        // Update statistics capability drop
-        state.weldSimulation.cp = 1.18;
-        state.weldSimulation.cpk = 0.94; // Severe Cpk reduction (out of spec)
-        state.weldSimulation.defectRate = 3.62;
-
-        cpText.textContent = state.weldSimulation.cp;
-        cpText.className = "cpk-val text-warning";
-        
-        cpkText.textContent = state.weldSimulation.cpk;
-        cpkText.className = "cpk-val text-danger"; // Flash red on low Cpk
-
-        defectRateText.textContent = `${state.weldSimulation.defectRate}%`;
-        defectRateText.className = "cpk-val text-danger";
-
-        // Update SPC Chart limits
-        spcChartAlert.textContent = "PROCESS DEVIATION DETECTED";
-        spcChartAlert.className = "chart-alert text-danger";
-
-        // Change Operator Guidance UI to danger warnings
-        guidePanel.className = "operator-guide-box mt-4 guide-alert-border animate-pulse";
-        
-        const badgeSpan = guidePanel.querySelector('.badge');
-        badgeSpan.className = "badge badge-pulse text-danger";
-        badgeSpan.textContent = "ACTION REQUIRED";
-
-        // Custom recommendations based on defect injected
-        if (currentDefect === 'porosity') {
-            guideText.innerHTML = `<strong>Root Cause: High Surface Contamination or Shielding Gas Flux Drop.</strong><br>
-            <em>Action:</em> 1. Halt Welding feed temporarily. 2. Purge ultrasonic weld horn shielding nozzle. 3. Verify clean oxide layers of copper contact tabs. 4. Trigger auto-calibration.`;
-        } 
-        else if (currentDefect === 'crack') {
-            guideText.innerHTML = `<strong>Root Cause: Over-aggressive clamping pressure or high thermal cooling stresses.</strong><br>
-            <em>Action:</em> 1. Adjust welder clamping pressure settings (Reduce 15%). 2. Verify cooling block flow rates are within specifications. 3. Re-scan joints.`;
-        }
-        else {
-            guideText.innerHTML = `<strong>Root Cause: Mechanical misalignment of the welding anvil grid.</strong><br>
-            <em>Action:</em> 1. Calibrate Line 4 anvil guide rails. 2. Verify robot gripper alignment limits in calibration script. 3. Execute self-calibration.`;
-        }
-
-        // Add a massive outlier point to the live SPC Chart!
-        addSpcOutlier(currentDefect);
-
-        // Auto-heal/reset simulation after 10 seconds!
-        setTimeout(() => {
-            resetWeldSimulationBaseline();
-        }, 10000);
-    });
-
-    function addSpcOutlier(defect) {
-        const pointsContainer = document.getElementById('spc-points');
-        const spcLine = document.getElementById('spc-line');
-        
-        // Outlier value (beyond limits)
-        const outlierY = defect === 'misalign' ? 14 : 112; // extremely high or low
-        
-        // Redraw SPC lines adding outlier
-        let points = [...state.weldSimulation.spcPoints];
-        points.push(outlierY);
-        if (points.length > 15) points.shift(); // sliding window
-
-        let dAttr = `M 0,${points[0]}`;
-        points.forEach((val, i) => {
-            const x = (i / (points.length - 1)) * 420;
-            dAttr += ` L ${x},${val}`;
-        });
-        spcLine.setAttribute('d', dAttr);
-
-        // Redraw dots
-        pointsContainer.innerHTML = '';
-        points.forEach((val, i) => {
-            const x = (i / (points.length - 1)) * 420;
-            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('cx', x);
-            circle.setAttribute('cy', val);
-            circle.setAttribute('r', 3);
+    if (triggerDefectBtn) {
+        triggerDefectBtn.addEventListener('click', () => {
+            const defects = ['porosity', 'crack', 'misalign'];
+            const randomDefect = defects[Math.floor(Math.random() * defects.length)];
+            state.weldSimulation.activeDefect = randomDefect;
             
-            if (val === outlierY) {
-                circle.setAttribute('class', 'spc-pt out-of-bounds');
+            triggerDefectBtn.className = "btn btn-outline btn-sm active-btn";
+            triggerDefectBtn.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Defect: ${randomDefect.toUpperCase()}`;
+
+            operatorGuidePanel.className = "operator-guide-box mt-4 guide-alert-border animate-pulse";
+            operatorGuidePanel.querySelector('.badge').className = "badge badge-pulse text-danger";
+            operatorGuidePanel.querySelector('.badge').textContent = "CRITICAL OUT-OF-SPEC";
+
+            if (randomDefect === 'porosity') {
+                guideInstructionText.innerHTML = `<strong>Weld Joint Porosity Detected.</strong><br>
+                <em>Mitigation Action Required:</em> 1. Halt gas solenoid shutter. 2. Verify shielding Argon flow regulators. 3. pausse line for electrode cleaning.`;
+            } else if (randomDefect === 'crack') {
+                guideInstructionText.innerHTML = `<strong>Joint Structural Crack Detected.</strong><br>
+                <em>Mitigation Action Required:</em> 1. Reject cylinder assembly immediately. 2. Run edge scan calibration of optical actuators. 3. Adjust heat dissipation limits.`;
             } else {
-                circle.setAttribute('class', 'spc-pt');
+                guideInstructionText.innerHTML = `<strong>Laser Alignment Offset Detected.</strong><br>
+                <em>Mitigation Action Required:</em> 1. Execute auto-calibration alignment sweep. 2. Reduce weld head feed speed to 110mm/s. 3. recalibrate laser coordinate center.`;
             }
-            pointsContainer.appendChild(circle);
+
+            // Restore baseline after 5 seconds of active troubleshooting simulation!
+            setTimeout(() => {
+                state.weldSimulation.activeDefect = null;
+                triggerDefectBtn.className = "btn btn-outline btn-sm";
+                triggerDefectBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Inject Weld Defect`;
+                operatorGuidePanel.className = "operator-guide-box mt-4";
+                operatorGuidePanel.querySelector('.badge').className = "badge badge-success";
+                operatorGuidePanel.querySelector('.badge').textContent = "NOMINAL";
+                guideInstructionText.textContent = `"Process is highly centered. Cp is 1.54, indicating excellent process potential. No intervention necessary. Standard weld energy output (1400J) maintained."`;
+            }, 6000);
         });
     }
-
-    function resetWeldSimulationBaseline() {
-        state.weldSimulation.activeDefect = null;
-
-        btnInjectDefect.className = "btn btn-outline btn-sm mr-2";
-        btnInjectDefect.innerHTML = `<i class="fa-solid fa-bolt"></i> Inject Weld Defect`;
-
-        // Restore capabilities
-        state.weldSimulation.cp = 1.54;
-        state.weldSimulation.cpk = 1.48;
-        state.weldSimulation.defectRate = 0.02;
-
-        cpText.textContent = state.weldSimulation.cp;
-        cpText.className = "cpk-val text-success";
-        
-        cpkText.textContent = state.weldSimulation.cpk;
-        cpkText.className = "cpk-val text-success";
-
-        defectRateText.textContent = `${state.weldSimulation.defectRate}%`;
-        defectRateText.className = "cpk-val text-success";
-
-        spcChartAlert.textContent = "Process in Control";
-        spcChartAlert.className = "chart-alert text-success";
-
-        // Reset guidance
-        guidePanel.className = "operator-guide-box mt-4";
-        const badgeSpan = guidePanel.querySelector('.badge');
-        badgeSpan.className = "badge badge-success";
-        badgeSpan.textContent = "NOMINAL";
-        
-        guideText.textContent = `"Process is highly centered. Cp is 1.54, indicating excellent process potential. No intervention necessary. Standard weld energy output (1400J) maintained."`;
-
-        // Restore baseline points
-        const pointsContainer = document.getElementById('spc-points');
-        const spcLine = document.getElementById('spc-line');
-        const points = [...state.weldSimulation.spcPoints];
-
-        let dAttr = `M 0,${points[0]}`;
-        points.forEach((val, i) => {
-            const x = (i / (points.length - 1)) * 420;
-            dAttr += ` L ${x},${val}`;
-        });
-        spcLine.setAttribute('d', dAttr);
-
-        pointsContainer.innerHTML = '';
-        points.forEach((val, i) => {
-            const x = (i / (points.length - 1)) * 420;
-            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('cx', x);
-            circle.setAttribute('cy', val);
-            circle.setAttribute('r', 3);
-            circle.setAttribute('class', 'spc-pt');
-            pointsContainer.appendChild(circle);
-        });
-    }
-
-    // Render initial SPC chart dots
-    resetWeldSimulationBaseline();
 
 
     /* ==========================================================================
-       5. Module 4: Supplier Risk & ESG Analytics
+       5. Module 4: Supplier Analytics (Interactive Registry & Plotting)
        ========================================================================== */
-    const bubbles = document.querySelectorAll('.scatter-bubble');
-    const filterAllBtn = document.getElementById('filter-all-suppliers');
-    const filterLowBtn = document.getElementById('filter-low-gri');
-    const filterHighEsgBtn = document.getElementById('filter-high-esg');
+    const supplierDatabase = {
+        'Ningbo Sourcing': {
+            name: 'Ningbo Sourcing Corp',
+            location: 'Ningbo, CN',
+            gri: '82%',
+            leadTime: '18 Days',
+            esg: 'Grade D',
+            quality: '1.42',
+            bottlenecks: [
+                'Substantial export licensing restrictions on Critical Minerals.',
+                'Transit route passes entirely through congested Taiwan Strait lanes.',
+                'High reliance on coal-powered smelting grid.'
+            ]
+        },
+        'Atacama Lithium': {
+            name: 'Atacama Lithium Mining',
+            location: 'Atacama Desert, CL',
+            gri: '12%',
+            leadTime: '24 Days',
+            esg: 'Grade B',
+            quality: '1.48',
+            bottlenecks: [
+                'Longer sea lane transit times (+6 days relative to CN).',
+                'Ethical water extraction audits pending verification.',
+                'Vulnerable to South Atlantic trade lane swell bottlenecks.'
+            ]
+        },
+        'Hindustan Metals': {
+            name: 'Hindustan Metals & Alloys',
+            location: 'Pune, IN (Domestic)',
+            gri: '2%',
+            leadTime: '4 Days',
+            esg: 'Grade A',
+            quality: '1.54',
+            bottlenecks: [
+                'Unit purchase premium cost is +22% relative to CN imports.',
+                'Capacity limits set to maximum 5,000 tons/annum.',
+                'Low processing scale for high-grade EV traction components.'
+            ]
+        },
+        'Aussie Mineral Corp': {
+            name: 'Aussie Mineral Corp',
+            location: 'Perth, AU',
+            gri: '8%',
+            leadTime: '16 Days',
+            esg: 'Grade B',
+            quality: '1.45',
+            bottlenecks: [
+                'Vulnerable to Western Australia cyclone shipping delays.',
+                'High port cargo processing fees.'
+            ]
+        },
+        'Rhineland Semiconductors': {
+            name: 'Rhineland Semiconductors',
+            location: 'Dresden, DE',
+            gri: '35%',
+            leadTime: '22 Days',
+            esg: 'Grade B',
+            quality: '1.49',
+            bottlenecks: [
+                'European regulatory carbon border tax adjustments.',
+                'Stretched fab wafer booking queues.'
+            ]
+        },
+        'Taiwan Microchip Corp': {
+            name: 'Taiwan Microchip Corp',
+            location: 'Hsinchu, TW',
+            gri: '90%',
+            leadTime: '15 Days',
+            esg: 'Grade C',
+            quality: '1.56',
+            bottlenecks: [
+                'Critical fab location in highly volatile geopolitical zone.',
+                'Vulnerable to sea blockades and power grid failures.'
+            ]
+        }
+    };
 
-    // Supplier Profile DOM Elements
-    const profileName = document.getElementById('profile-supplier-name');
-    const profileLoc = document.getElementById('profile-supplier-location');
+    const scatterCircles = document.querySelectorAll('.scatter-bubble');
+    const profileSupName = document.getElementById('profile-supplier-name');
+    const profileSupLoc = document.getElementById('profile-supplier-location');
     const profileGri = document.getElementById('profile-gri');
     const profileLead = document.getElementById('profile-lead-time');
     const profileEsg = document.getElementById('profile-esg');
     const profileQuality = document.getElementById('profile-quality');
     const profileBottlenecks = document.getElementById('profile-bottlenecks');
 
-    const supplierProfiles = {
-        'Ningbo Sourcing': {
-            name: 'Ningbo Sourcing Corp',
-            location: 'Ningbo, Zhejiang Province, China',
-            gri: '82%',
-            lead: '18 Days',
-            esg: 'Grade D (Elevated Carbon)',
-            quality: '1.42 Cpk',
-            bottlenecks: [
-                'Substantial export licensing restrictions on Critical Minerals.',
-                'Transit route passes entirely through congested Taiwan Strait lanes.',
-                'High reliance on coal-powered smelting grid.'
-            ],
-            riskLvl: 'high'
-        },
-        'Atacama Lithium': {
-            name: 'Atacama Lithium Mining Ltd',
-            location: 'Atacama Desert, Chile',
-            gri: '12%',
-            lead: '24 Days',
-            esg: 'Grade B (Low Sourcing Footprint)',
-            quality: '1.51 Cpk',
-            bottlenecks: [
-                'Longer sea transit lanes (+6 days logistics buffer required).',
-                'Local water extraction volume constraints.'
-            ],
-            riskLvl: 'low'
-        },
-        'Hindustan Metals': {
-            name: 'Hindustan Special Metals (Domestic)',
-            location: 'Chakan Industrial Zone, Pune, India',
-            gri: '2%',
-            lead: '4 Days (Local)',
-            esg: 'Grade B (Low Sourcing Footprint)',
-            quality: '1.48 Cpk',
-            bottlenecks: [
-                'Capacity currently capped at 1,500 tons/annum (expansion scheduled).',
-                'Raw material processing relies on imported chemicals.'
-            ],
-            riskLvl: 'domestic'
-        },
-        'Aussie Mineral Corp': {
-            name: 'Aussie Mineral Sourcing Ltd',
-            location: 'Pilbara Sourcing District, Australia',
-            gri: '15%',
-            lead: '30 Days',
-            esg: 'Grade A (Green Hydrogen Smelted)',
-            quality: '1.56 Cpk',
-            bottlenecks: [
-                'Shipping costs premium (+12% above benchmark baseline).',
-                'Strict safety standards restrict sudden capacity spikes.'
-            ],
-            riskLvl: 'low'
-        },
-        'Rhineland Semiconductors': {
-            name: 'Rhineland Semiconductors GmbH',
-            location: 'Dresden, Saxony, Germany',
-            gri: '35%',
-            lead: '22 Days',
-            esg: 'Grade A (100% Renewable Powered Fab)',
-            quality: '1.62 Cpk',
-            bottlenecks: [
-                'Energy price spikes in EU impact pricing structures.',
-                'Capacity highly backordered by German premium automotive OEMs.'
-            ],
-            riskLvl: 'mid'
-        },
-        'Taiwan Microchip Corp': {
-            name: 'Taiwan Microchip Corp (TSMC Affiliate)',
-            location: 'Hsinchu Science Park, Taiwan',
-            gri: '90%',
-            lead: '26 Days',
-            esg: 'Grade C (High Water Footprint)',
-            quality: '1.68 Cpk',
-            bottlenecks: [
-                'Extremely high geopolitical threat zone (Taiwan Strait).',
-                'Severe supply allocation caps on advanced logic microchips.'
-            ],
-            riskLvl: 'high'
-        }
-    };
+    function selectSupplierProfile(id) {
+        const data = supplierDatabase[id];
+        if (!data) return;
 
-    function loadSupplierProfile(supplierKey) {
-        const profile = supplierProfiles[supplierKey];
-        if (!profile) return;
+        state.selectedSupplier = id;
+        profileSupName.textContent = data.name;
+        profileSupLoc.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${data.location}`;
+        profileGri.textContent = data.gri;
+        profileLead.textContent = data.leadTime;
+        profileEsg.textContent = data.esg;
+        profileQuality.textContent = data.quality;
 
-        profileName.textContent = profile.name;
-        profileLoc.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${profile.location}`;
-        
-        profileGri.textContent = profile.gri;
-        if (parseInt(profile.gri) > 60) {
-            profileGri.className = "stat-val text-danger";
-        } else if (parseInt(profile.gri) > 20) {
-            profileGri.className = "stat-val text-warning";
-        } else {
-            profileGri.className = "stat-val text-success";
-        }
+        const griVal = parseInt(data.gri);
+        if (griVal > 60) profileGri.className = "stat-val text-danger";
+        else if (griVal > 30) profileGri.className = "stat-val text-warning";
+        else profileGri.className = "stat-val text-success";
 
-        profileLead.textContent = profile.lead;
-        
-        profileEsg.textContent = profile.esg;
-        if (profile.esg.includes('Grade A') || profile.esg.includes('Grade B')) {
-            profileEsg.className = "stat-val text-success";
-        } else {
-            profileEsg.className = "stat-val text-danger";
-        }
-
-        profileQuality.textContent = profile.quality;
-
-        // Ingest Bullet points
         profileBottlenecks.innerHTML = '';
-        profile.bottlenecks.forEach(bullet => {
+        data.bottlenecks.forEach(b => {
             const li = document.createElement('li');
-            li.innerHTML = `<i class="fa-solid fa-triangle-exclamation ${profile.riskLvl === 'high' ? 'text-danger' : 'text-warning'}"></i> ${bullet}`;
+            li.innerHTML = `<i class="fa-solid fa-triangle-exclamation ${griVal > 50 ? 'text-danger' : 'text-warning'}"></i> ${b}`;
             profileBottlenecks.appendChild(li);
         });
 
-        // Set active styling on scatter circles
-        bubbles.forEach(b => {
-            if (b.getAttribute('data-supplier') === supplierKey) {
-                b.setAttribute('r', '20'); // enlarge selected
-                b.style.stroke = "var(--color-teal)";
-                b.style.strokeWidth = "3px";
-            } else {
-                let size = '12';
-                if (b.id === 'bub-taiwan') size = '17';
-                else if (b.id === 'bub-ningbo') size = '16';
-                else if (b.id === 'bub-rhine') size = '15';
-                else if (b.id === 'bub-atacama') size = '14';
-                else if (b.id === 'bub-aussie') size = '13';
-                else if (b.id === 'bub-hindustan') size = '11';
-                b.setAttribute('r', size);
-                b.style.stroke = "#ffffff";
-                b.style.strokeWidth = "1.5px";
-            }
+        // Set active circle layout
+        document.querySelectorAll('.scatter-bubble').forEach(c => {
+            c.style.stroke = 'none';
+            c.style.r = c.getAttribute('id') === 'bub-ningbo' ? '16' : 
+                         (c.getAttribute('id') === 'bub-atacama' ? '14' : 
+                         (c.getAttribute('id') === 'bub-hindustan' ? '11' : '13'));
         });
-
-        state.selectedSupplier = supplierKey;
+        
+        const circleId = id === 'Ningbo Sourcing' ? 'bub-ningbo' :
+                         (id === 'Atacama Lithium' ? 'bub-atacama' :
+                         (id === 'Hindustan Metals' ? 'bub-hindustan' :
+                         (id === 'Aussie Mineral Corp' ? 'bub-aussie' :
+                         (id === 'Rhineland Semiconductors' ? 'bub-rhine' : 'bub-taiwan'))));
+        
+        const circle = document.getElementById(circleId);
+        if (circle) {
+            circle.style.stroke = 'var(--color-teal)';
+            circle.style.strokeWidth = '2px';
+            circle.style.r = String(parseInt(circle.style.r || circle.getAttribute('r')) + 4);
+        }
     }
 
-    // Set bubble click listeners
-    bubbles.forEach(bubble => {
-        bubble.addEventListener('click', () => {
-            const supplierKey = bubble.getAttribute('data-supplier');
-            loadSupplierProfile(supplierKey);
+    scatterCircles.forEach(circle => {
+        circle.addEventListener('click', () => {
+            const supplierKey = circle.getAttribute('data-supplier');
+            selectSupplierProfile(supplierKey);
         });
     });
 
-    // Multi-factor Filter Buttons
-    filterAllBtn.addEventListener('click', () => {
-        bubbles.forEach(b => b.classList.remove('dimmed'));
-        filterAllBtn.classList.add('active-btn');
-        filterLowBtn.classList.remove('active-btn');
-        filterHighEsgBtn.classList.remove('active-btn');
-    });
+    // Toggle Sourcing Supplier Registration Form
+    const btnToggleAddSupplier = document.getElementById('btn-toggle-add-supplier');
+    const addSupplierPanel = document.getElementById('add-supplier-panel');
+    const btnSaveNewSupplier = document.getElementById('btn-save-new-supplier');
 
-    filterLowBtn.addEventListener('click', () => {
-        bubbles.forEach(b => {
-            const supplierKey = b.getAttribute('data-supplier');
-            const gri = parseInt(supplierProfiles[supplierKey].gri);
-            if (gri > 40) {
-                b.classList.add('dimmed');
-            } else {
-                b.classList.remove('dimmed');
+    if (btnToggleAddSupplier) {
+        btnToggleAddSupplier.addEventListener('click', () => {
+            addSupplierPanel.classList.toggle('hidden');
+        });
+    }
+
+    if (btnSaveNewSupplier) {
+        btnSaveNewSupplier.addEventListener('click', () => {
+            const name = document.getElementById('new-sup-name').value;
+            const loc = document.getElementById('new-sup-loc').value;
+            const esg = document.getElementById('new-sup-esg').value;
+            const lead = document.getElementById('new-sup-lead').value;
+            const gri = document.getElementById('new-sup-gri').value;
+
+            if (!name || !loc || !lead || !gri) {
+                alert("Please fill in all supplier registry parameters.");
+                return;
             }
-        });
-        filterLowBtn.classList.add('active-btn');
-        filterAllBtn.classList.remove('active-btn');
-        filterHighEsgBtn.classList.remove('active-btn');
-    });
 
-    filterHighEsgBtn.addEventListener('click', () => {
-        bubbles.forEach(b => {
-            const supplierKey = b.getAttribute('data-supplier');
-            const esg = supplierProfiles[supplierKey].esg;
-            if (!esg.includes('Grade A') && !esg.includes('Grade B')) {
-                b.classList.add('dimmed');
-            } else {
-                b.classList.remove('dimmed');
-            }
-        });
-        filterHighEsgBtn.classList.add('active-btn');
-        filterAllBtn.classList.remove('active-btn');
-        filterLowBtn.classList.remove('active-btn');
-    });
+            // Register in database memory
+            supplierDatabase[name] = {
+                name: name,
+                location: loc,
+                gri: `${gri}%`,
+                leadTime: `${lead} Days`,
+                esg: `Grade ${esg}`,
+                quality: (1.3 + Math.random() * 0.3).toFixed(2),
+                bottlenecks: [
+                    "Sourcing established via localized custom supplier registry.",
+                    `Lead time parameters configured to ${lead} days.`,
+                    `ESG rating audited as Grade ${esg}.`
+                ]
+            };
 
-    // Load Ningbo as default profile view
-    loadSupplierProfile('Ningbo Sourcing');
+            // Plot new SVG element dynamically on the scatter chart!
+            const svgChart = document.getElementById('scatter-chart');
+            const leadVal = parseInt(lead);
+            const griVal = parseInt(gri);
+
+            // Mapping: Lead Time (0-40 days) to SVG X (40-480)
+            const cx = 40 + (Math.min(40, leadVal) / 40) * 440;
+            // Mapping: GRI (0-100%) to SVG Y (260-20)
+            const cy = 260 - (Math.min(100, griVal) / 100) * 240;
+
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("id", `bub-${name.toLowerCase().replace(/\s+/g, '-')}`);
+            circle.setAttribute("cx", cx.toFixed(1));
+            circle.setAttribute("cy", cy.toFixed(1));
+            circle.setAttribute("r", "13");
+            circle.setAttribute("class", `scatter-bubble ${griVal > 60 ? 'risk-high' : (griVal > 30 ? 'risk-mid' : 'risk-low')}`);
+            circle.setAttribute("data-supplier", name);
+            
+            circle.addEventListener('click', () => {
+                selectSupplierProfile(name);
+            });
+
+            svgChart.appendChild(circle);
+
+            // Add label text to SVG
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", cx.toFixed(1));
+            text.setAttribute("y", (cy - 16).toFixed(1));
+            text.setAttribute("class", "bub-lbl");
+            text.setAttribute("text-anchor", "middle");
+            text.textContent = name;
+            svgChart.appendChild(text);
+
+            alert(`Supplier "${name}" registered and successfully plotted on the analytical map!`);
+            
+            // Clear inputs and hide panel
+            document.getElementById('new-sup-name').value = '';
+            document.getElementById('new-sup-loc').value = '';
+            document.getElementById('new-sup-lead').value = '';
+            document.getElementById('new-sup-gri').value = '';
+            addSupplierPanel.classList.add('hidden');
+
+            // Select it
+            selectSupplierProfile(name);
+        });
+    }
+
+    // Filters for scatter plot
+    const filterAll = document.getElementById('filter-all-suppliers');
+    const filterLowGRI = document.getElementById('filter-low-gri');
+    const filterHighESG = document.getElementById('filter-high-esg');
+
+    if (filterAll) {
+        filterAll.addEventListener('click', () => {
+            filterAll.className = "btn btn-outline btn-xs active-btn";
+            filterLowGRI.className = "btn btn-outline btn-xs";
+            filterHighESG.className = "btn btn-outline btn-xs";
+
+            document.querySelectorAll('.scatter-bubble').forEach(c => {
+                c.style.display = 'block';
+            });
+        });
+    }
+
+    if (filterLowGRI) {
+        filterLowGRI.addEventListener('click', () => {
+            filterLowGRI.className = "btn btn-outline btn-xs active-btn";
+            filterAll.className = "btn btn-outline btn-xs";
+            filterHighESG.className = "btn btn-outline btn-xs";
+
+            document.querySelectorAll('.scatter-bubble').forEach(c => {
+                const supplierKey = c.getAttribute('data-supplier');
+                const sData = supplierDatabase[supplierKey];
+                if (sData) {
+                    const risk = parseInt(sData.gri);
+                    c.style.display = risk < 40 ? 'block' : 'none';
+                }
+            });
+        });
+    }
+
+    if (filterHighESG) {
+        filterHighESG.addEventListener('click', () => {
+            filterHighESG.className = "btn btn-outline btn-xs active-btn";
+            filterAll.className = "btn btn-outline btn-xs";
+            filterLowGRI.className = "btn btn-outline btn-xs";
+
+            document.querySelectorAll('.scatter-bubble').forEach(c => {
+                const supplierKey = c.getAttribute('data-supplier');
+                const sData = supplierDatabase[supplierKey];
+                if (sData) {
+                    const esg = sData.esg;
+                    c.style.display = (esg.includes('A') || esg.includes('B')) ? 'block' : 'none';
+                }
+            });
+        });
+    }
 
 
     /* ==========================================================================
-       6. Module 5: ActionExtract-AI Shopfloor Meeting Parser
+       6. Module 5: ActionExtract-AI Shopfloor Parser (NLP Regex Engine)
        ========================================================================== */
     const transcriptSelector = document.getElementById('transcript-selector');
     const transcriptText = document.getElementById('transcript-text');
     const btnParseTranscript = document.getElementById('btn-parse-transcript');
+    
     const resultsEmptyState = document.getElementById('results-empty-state');
     const resultsDataContainer = document.getElementById('results-data-container');
-
-    const tasksContainer = document.getElementById('extracted-tasks-container');
-    const erpContainer = document.getElementById('erp-proposals-container');
-    const emailDraftContainer = document.getElementById('email-draft-content');
+    const extractedTasksContainer = document.getElementById('extracted-tasks-container');
+    const erpProposalsContainer = document.getElementById('erp-proposals-container');
+    const emailDraftContent = document.getElementById('email-draft-content');
     const btnCopyEmail = document.getElementById('btn-copy-email');
 
-    const transcriptsDb = {
-        'sourcing-disruption': {
-            raw: `Shift Lead (Sourcing): "Morning alignment. Sourcing operations reports the ocean carrier carrying battery cell terminals has been diverted from the Suez channel due to cargo port strikes. Our Pune assembly plant has exactly 9 days of Lithium terminal inventory left before welding lines must halt. The pricing on spot market materials is jumping +40%. We need to immediately evaluate redirects from Chile or see if Chakan Hindustan Metals can supply specialized tabs to Pune to avoid line closures."`,
-            tasks: [
-                { desc: 'Activate alternate route 2: Chile to India logistics buffer redirect.', owner: 'Logistics Manager', p: 'HIGH' },
-                { desc: 'Request trial production specification tests from Hindustan Metals Pune.', owner: 'Quality Eng', p: 'URGENT' },
-                { desc: 'Update battery terminal ERP master allocation spreadsheet.', owner: 'Sourcing Lead', p: 'MEDIUM' }
-            ],
-            erp: {
-                title: 'ERP Re-Order Sourcing Proposal: SPECIALIZED METALS',
-                desc: 'Procurement Request ID: ERP-2026-LI-ALT. Alternate sourcing candidate identified: Hindustan Special Metals (Domestic, Pune). Sourcing volume request: 400kg. Cost target: $15.2/kg (+22%). Lead time: 2 days.'
-            },
-            email: `Subject: EMERGENCY: Sourcing Divert Sourcing Orders - NMC Lithium Terminals
-
-Dear Sourcing Sourcing Partners,
-
-Due to active cargo strikes stranding our sea shipments in the Suez Channel transit, we are executing our AI-hedged sourcing resilience protocols. 
-
-We require immediate specifications and price quotes for 400kg of specialized battery terminals from our local partner, Hindustan Special Metals (Chakan, Pune). Sourcing Lead Times are targeted under 3 days to safeguard Line 4 continuity.
-
-Please pause the Ningbo order sequence NGB-9023 until port clearances are confirmed.
-
-Best Regards,
-AutoResilience Procurement Lead`
-        },
-        'shopfloor-defect': {
-            raw: `Line 4 Welder Supervisor: "Weekly Quality Loop. Welder Edge Station #4 is experiencing a sudden Cp/Cpk drop on NMC battery tab welding. Real-time video scanning caught a defect spike on three cell units where porosity levels exceeded spec limits by 18%, tripping safety tolerance checks. We suspect ultrasonic welder horn oxide buildup or pressure feed calibration is off center. Sourcing has to queue a calibration technician immediately before yield drop hits standard metrics."`,
-            tasks: [
-                { desc: 'Execute ultrasonic welder self-calibration cycle on Line 4.', owner: 'Line Supervisor', p: 'URGENT' },
-                { desc: 'Inspect welding horn clamp grid and clean oxide surface layers.', owner: 'Shop Maintenance', p: 'HIGH' },
-                { desc: 'Review process control charts (Cp/Cpk logs) for Weld Joint Station #4.', owner: 'Process Engineer', p: 'MEDIUM' }
-            ],
-            erp: {
-                title: 'ERP Process Action Proposal: CALIBRATION TRIGGERED',
-                desc: 'Calibration Task Ticket: TKT-2026-WELD4. Action: Automated dispatch calibration engineer to line welder station 4. Schedule: Emergency (Within 4 hours). Calibration code: EN-1400J.'
-            },
-            email: `Subject: PROCESS EXCEPTION TICKET: Line Welder Edge Station #4 Calibration
-
-Dear Maintenance Team,
-
-Our VisionDetect-AI smart inspection feed has detected a process deviation on Edge Camera #4. Ultrasonic Welder Line 4 process capability (Cpk) has dropped below specification limits to 0.94 due to repetitive welding porosity.
-
-Please dispatch a technician to calibrate the anvil, verify welder energy outputs (Target: 1400J), and inspect clamping anvil friction.
-
-This is critical to prevent batch rejection.
-
-Best Regards,
-AegisFlow Manufacturing Quality Control`
-        },
-        'sustainability-audit': {
-            raw: `Sourcing Audit Board: "Green Initiatives update. Under Circular Economy policies and EU Scope 3 parameters, our suppliers must be audited for carbon emissions compliance. Ningbo Sourcing runs a coal-heavy extraction grid (Grade D, 64kg CO2/kg). We need to source from Aussie Minerals or Atacama Lithium to drop our carbon score by at least 15% and comply with European battery material passport audits. Let's draft the supplier warning letter."`,
-            tasks: [
-                { desc: 'Generate digital Material Passports for next-gen battery packs.', owner: 'Sustainability Lead', p: 'MEDIUM' },
-                { desc: 'Negotiate Scope 3 emissions quotas with Aussie Minerals.', owner: 'Sourcing Director', p: 'HIGH' },
-                { desc: 'Audit carbon lifecycle of raw Lithium cell chemistries.', owner: 'ESG Committee', p: 'MEDIUM' }
-            ],
-            erp: {
-                title: 'ERP ESG Procurement Proposal: ESG REALLOCATION',
-                desc: 'ESG Material Swap Proposal: Material Sourcing Code: NMC-LITHIUM-ESG. Action: Settle 45% sourcing allocation to Aussie Mineral Sourcing (Pilbara, AU). Projected Carbon Reduction: 18.2% across battery chassis footprint.'
-            },
-            email: `Subject: EU Scope 3 Emissions & Material Passport Auditing Alert
-
-Dear Sourcing Strategy team,
-
-To maintain compliance with EU circular economy specifications, we are auditing all cell and magnet materials. 
-
-Our current coal-based smelting supply lines from Ningbo Sourcing do not satisfy carbon targets. We are shifting 45% of our Lithium Carbonate allocations to Aussie Mineral Sourcing (Australia) to utilize their clean hydrogen-smelted supplies.
-
-Please prepare supply agreements under contract code ESG-NMC-2026.
-
-Best Regards,
-Director of Sustainable Procurement`
-        }
+    const transcriptScenarios = {
+        'sourcing-disruption': `Logistics Lead Dispatcher: "Warning. Sourcing lines for battery-grade Lithium are severely disrupted. Trade tariff increases of 45% on import shipments from Ningbo CN are taking effect next Monday. Sourcing cost is spiking to $18/kg. Lead time is stretched. Requesting re-routing via Atacama Chile lanes to Pune assembly plant. We must draft the supply proposal immediately."`,
+        'shopfloor-defect': `Shopfloor Quality Supervisor: "Welder Line 4 alignment is drifting. Our laser welding system reports that Cpk process accuracy has dropped to 0.98, and Cp potential is down to 1.10. High porosity detected in joint seams. PAUSE the welding actuators line immediately, trigger calibration sweeps of the positioning tips, and reduce base voltage limits."`,
+        'sustainability-audit': `Compliance Audit Manager: "We have finalized the Scope 3 carbon compliance review. Ningbo CN smelter has failed ESG standards with a D-grade due to carbon emissions reaching 82 kg CO2/kg. We must transition sourcing to Cap-and-Trade compliant local vendors, specifically Hindustan Metals in India. Sourcing contract limits should be logged in SAP immediately."`
     };
 
-    function updateTranscriptText() {
-        const scenario = transcriptSelector.value;
-        if (transcriptsDb[scenario]) {
-            transcriptText.value = transcriptsDb[scenario].raw;
-        }
+    if (transcriptSelector) {
+        transcriptSelector.addEventListener('change', () => {
+            const scenario = transcriptSelector.value;
+            transcriptText.value = transcriptScenarios[scenario] || '';
+        });
+        // Set default
+        transcriptText.value = transcriptScenarios['sourcing-disruption'];
     }
 
-    transcriptSelector.addEventListener('change', updateTranscriptText);
-    
-    // Set initial transcript text
-    updateTranscriptText();
+    if (btnParseTranscript) {
+        btnParseTranscript.addEventListener('click', () => {
+            const text = transcriptText.value.trim();
+            if (!text) {
+                alert("Please enter a briefing transcript to parse.");
+                return;
+            }
 
-    btnParseTranscript.addEventListener('click', () => {
-        const scenario = transcriptSelector.value;
-        const data = transcriptsDb[scenario];
+            btnParseTranscript.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Parsing NLP Semantics...`;
+            btnParseTranscript.setAttribute('disabled', 'true');
 
-        // Animate Loader simulated feel
-        btnParseTranscript.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Parsing NLP Signals...`;
-        btnParseTranscript.setAttribute('disabled', 'true');
+            setTimeout(() => {
+                btnParseTranscript.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Extract Actions & Sourcing Adjustments`;
+                btnParseTranscript.removeAttribute('disabled');
 
-        setTimeout(() => {
-            btnParseTranscript.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Extract Actions & Sourcing Adjustments`;
-            btnParseTranscript.removeAttribute('disabled');
+                resultsEmptyState.classList.add('hidden');
+                resultsDataContainer.classList.remove('hidden');
 
-            resultsEmptyState.classList.add('hidden');
-            resultsDataContainer.classList.remove('hidden');
+                // Dynamic NLP Extraction logic using Regex
+                const lowerText = text.toLowerCase();
+                let tasks = [];
+                let erpTitle = "General Operational Adjustment";
+                let erpDesc = "Process request logged via AegisFlow NLP parser.";
+                let emailTo = "operations@aegisflow-partner.com";
+                let emailSubject = "Operational Notice: Sourcing Adjustment";
+                let emailBody = "";
 
-            // Render tasks
-            tasksContainer.innerHTML = '';
-            data.tasks.forEach(task => {
-                const card = document.createElement('div');
-                card.className = 'task-item-card';
-                card.innerHTML = `
-                    <div class="task-details">
-                        <span class="task-desc">${task.desc}</span>
-                        <span class="task-meta">Owner: <strong>${task.owner}</strong></span>
+                if (lowerText.includes('welder') || lowerText.includes('weld') || lowerText.includes('defect') || lowerText.includes('cpk')) {
+                    // Welder defect scenario
+                    const matchCpk = text.match(/Cpk\s+has\s+dropped\s+to\s+([0-9.]+)/i) || text.match(/Cpk\s+([0-9.]+)/i);
+                    const cpkVal = matchCpk ? matchCpk[1] : "0.98";
+
+                    tasks = [
+                        `Pause welder actuators line immediately due to alignment drift.`,
+                        `Initiate automated calibration sequence (Current Cpk: ${cpkVal}).`,
+                        `Reduce weld feed speed and recalibrate laser sensor targets.`
+                    ];
+
+                    erpTitle = "Real-Time Welder Actuator Calibration Request";
+                    erpDesc = `Log calibration event for Welder Line 4. Adjust voltage offsets to restore process capability Cpk target (> 1.50).`;
+                    
+                    emailTo = "engineering.leads@aegisflow.ai";
+                    emailSubject = "URGENT: Station 4 Weld Quality Drift Calibration Request";
+                    emailBody = `Dear Engineering Lead,
+
+We have detected a critical process capability drift at weld joint station 4. 
+The process capability index (Cpk) has dropped to ${cpkVal}. 
+
+Please execute the optical laser actuator calibration sweep immediately and verify weld tip alignment.
+
+Best regards,
+AegisFlow Operator Co-Pilot`;
+                }
+                else if (lowerText.includes('lithium') || lowerText.includes('sourcing') || lowerText.includes('transit') || lowerText.includes('tariff')) {
+                    // Sourcing disruption scenario
+                    const matchTariff = text.match(/(\d+)%/i);
+                    const tariffVal = matchTariff ? matchTariff[1] : "45";
+
+                    tasks = [
+                        `Initiate alternate path redirection of Lithium chemical supply lines.`,
+                        `Activate South Atlantic Ocean Pacific lanes from Atacama Chile (CL).`,
+                        `Audit tariff penalty structures (+${tariffVal}% CN surcharge verified).`
+                    ];
+
+                    erpTitle = "Sourcing Path Redirection: Lithium Carbonate";
+                    erpDesc = `Reroute NMC raw battery shipments from Ningbo, CN to Atacama Desert Mining, CL. Quantities: 15,000 kg.`;
+
+                    emailTo = "sourcing@atacama-lithium.cl";
+                    emailSubject = "Sourcing Routing Request: NMC Raw Material Contract";
+                    emailBody = `Dear Sourcing Coordinator,
+
+Due to import surcharges (+${tariffVal}%) active on Chinese trade lanes, we are executing our alternate sourcing routing contracts.
+
+Please prepare logistics dispatch nodes from Valparaiso, CL to Mumbai Port, IN.
+
+Best regards,
+AegisFlow Sourcing Tower`;
+                }
+                else {
+                    // Generic fallback dynamic regex parser
+                    // Pull out potential nouns/surnames and numbers
+                    const words = text.split(/\s+/);
+                    const numbers = text.match(/\b\d+\b/g) || ["10"];
+                    const uppercaseWords = text.match(/\b[A-Z][a-z]+\b/g) || ["Sourcing Partner"];
+
+                    tasks = [
+                        `Audit operations logs for keyword events: "${uppercaseWords[0]}".`,
+                        `Review sourcing quantity offsets: ${numbers[0]} units.`,
+                        `Coordinate team callback and verify supply ledger parameters.`
+                    ];
+
+                    erpTitle = `Sourcing Adjustment: ${uppercaseWords[0]}`;
+                    erpDesc = `Adjust purchase specifications for item nodes. Logged units: ${numbers[0]}.`;
+
+                    emailTo = "ops.desk@aegisflow.ai";
+                    emailSubject = `Alert: Operational Sourcing Notification - ${uppercaseWords[0]}`;
+                    emailBody = `Dear Operations Desk,
+
+We have parsed a briefing transcript indicating adjustments are needed:
+- Priority Node: ${uppercaseWords[0]}
+- Target Quantity: ${numbers[0]} units
+
+Please log this proposal in your ERP ledger and dispatch orders.
+
+Best regards,
+AegisFlow AI Parser`;
+                }
+
+                // Render dynamically generated extracted results
+                extractedTasksContainer.innerHTML = '';
+                tasks.forEach(t => {
+                    const item = document.createElement('div');
+                    item.className = 'weld-calibration-log';
+                    item.style.display = 'flex';
+                    item.style.gap = '0.5rem';
+                    item.style.fontSize = '0.75rem';
+                    item.style.color = '#e2e8f0';
+                    item.style.background = 'rgba(255,255,255,0.01)';
+                    item.style.padding = '0.5rem 0.75rem';
+                    item.style.borderRadius = '6px';
+                    item.style.border = '1px solid var(--border-muted)';
+                    item.innerHTML = `<i class="fa-solid fa-square-check text-success" style="margin-top: 3px;"></i> <span>${t}</span>`;
+                    extractedTasksContainer.appendChild(item);
+                });
+
+                erpProposalsContainer.innerHTML = `
+                    <div class="erp-proposal-flex" style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 242, 254, 0.02); border: 1px solid rgba(0, 242, 254, 0.15); padding: 1rem; border-radius: 8px;">
+                        <div class="erp-info-txt">
+                            <h5 style="font-size: 0.8rem; font-weight: 700; color: var(--color-teal);">${erpTitle}</h5>
+                            <p style="font-size: 0.7rem; color: #cbd5e1; margin-top: 0.15rem;">${erpDesc}</p>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="alert('ERP Sourcing proposal successfully authorized and logged into SAP S/4HANA!')"><i class="fa-solid fa-file-invoice"></i> Authorize</button>
                     </div>
-                    <span class="badge ${task.p === 'URGENT' ? 'text-danger' : (task.p === 'HIGH' ? 'text-warning' : 'badge-outline')}">${task.p}</span>
                 `;
-                tasksContainer.appendChild(card);
-            });
 
-            // Render ERP Proposal
-            erpContainer.innerHTML = `
-                <div class="erp-proposal-flex">
-                    <div class="erp-info-txt">
-                        <h5>${data.erp.title}</h5>
-                        <p>${data.erp.desc}</p>
-                    </div>
-                    <button class="btn btn-primary btn-sm" onclick="alert('ERP Sourcing Request successfully logged into SAP/Oracle!')"><i class="fa-solid fa-file-invoice"></i> Approve</button>
-                </div>
-            `;
+                emailDraftContent.textContent = emailBody;
 
-            // Render Email Draft
-            emailDraftContainer.textContent = data.email;
+            }, 1200);
+        });
+    }
 
-        }, 1200);
-    });
-
-    // Copy to clipboard
-    btnCopyEmail.addEventListener('click', () => {
-        navigator.clipboard.writeText(emailDraftContainer.textContent);
-        btnCopyEmail.innerHTML = `<i class="fa-solid fa-check text-success"></i>`;
-        setTimeout(() => {
-            btnCopyEmail.innerHTML = `<i class="fa-regular fa-copy"></i>`;
-        }, 1500);
-    });
+    if (btnCopyEmail) {
+        btnCopyEmail.addEventListener('click', () => {
+            navigator.clipboard.writeText(emailDraftContent.textContent);
+            btnCopyEmail.innerHTML = `<i class="fa-solid fa-check text-success"></i>`;
+            setTimeout(() => {
+                btnCopyEmail.innerHTML = `<i class="fa-regular fa-copy"></i>`;
+            }, 1500);
+        });
+    }
 
     // Floating microphone simulated dictation typing
     const btnVoiceBriefing = document.getElementById('btn-voice-briefing');
-    const transcriptTextarea = document.getElementById('transcript-text');
-    const btnParseTranscript = document.getElementById('btn-parse-transcript');
-
     if (btnVoiceBriefing) {
         btnVoiceBriefing.addEventListener('click', () => {
             if (btnVoiceBriefing.classList.contains('listening')) return;
 
             btnVoiceBriefing.classList.add('listening');
-            transcriptTextarea.value = '';
+            transcriptText.value = '';
 
             const dictationText = "Operator Line 4 Reporting: We have detected a critical weld alignment drift at station 4. Process capability Cpk is dropping towards 0.98. Defect analysis indicates minor gas porosity. Requesting immediate edge calibration of the welder actuators and a 5% reduction in weld speed. Sourcing lead times for replacement copper electrodes must be audited from local vendors to avoid shopfloor halting.";
             
@@ -1244,7 +1282,7 @@ Director of Sustainable Procurement`
                     return;
                 }
                 if (charIdx < dictationText.length) {
-                    transcriptTextarea.value += dictationText.charAt(charIdx);
+                    transcriptText.value += dictationText.charAt(charIdx);
                     charIdx++;
                     setTimeout(typeChar, 20);
                 } else {
@@ -1256,138 +1294,9 @@ Director of Sustainable Procurement`
         });
     }
 
-    /* ==========================================================================
-       7. Hackathon Pitch Deck Presentation Modal
-       ========================================================================== */
-    const btnExportPitch = document.getElementById('btn-export-pitch');
-    const pitchModal = document.getElementById('pitch-modal');
-    const pitchModalClose = document.getElementById('pitch-modal-close');
-    const btnCloseModalConfirm = document.getElementById('btn-close-modal-confirm');
-
-    const slideData = {
-        1: {
-            title: "AegisFlow AI: Resilient Supply Chain & Smart Manufacturing",
-            content: "ET AutoTech Hackathon 2026\nTheme: Theme 1 - Electrification, Smart Sourcing & Zero-Defect Manufacturing\nTeam Name: Team AegisFlow\nTeam Members: Lead Architect & AI Developer\n\nSolution Outline:\nAn end-to-end operational intelligence suite integrating AltRoute-AI (geopolitical route optimization & sourcing GNNs) and VisionDetect-AI (edge computer vision welding analytics) for Indian automotive component manufacturing ecosystems."
-        },
-        2: {
-            title: "Theme Chosen - Brief Summary & Proposed Solution/Idea",
-            content: "Theme 1: Electrification & Smart Manufacturing / Sourcing Resilience\n\nProposed Solution:\nAegisFlow AI is a dual-core digital control tower for automotive manufacturing:\n1. Geopolitical Risk Hedging (AltRoute-AI): A real-time shipping risk assessment mapping and alternate raw material blend simulator (e.g., Neodymium to Ferrite ratios) with automated SAP/Oracle purchase proposals.\n2. Intelligent Edge Quality Inspect (VisionDetect-AI): 120 FPS welding camera analyzer providing real-time quality alerts, Cp/Cpk SPC dashboard tracking, and automatic robotic calibration routines.\n\nThis is a brand-new integrated control framework designed specifically to elevate local Indian suppliers (MSMEs) to high-yield Global Tier-1 sourcing standards."
-        },
-        3: {
-            title: "IMPACT OF PROPOSED SOLUTION",
-            content: "Feasibility, Scalability & Quantitative Impact:\n\n1. Operational Lead Time: 30% reduction in mineral logistics bottlenecks by predicting port blockades (Suez Canal / Taiwan Strait) and near-shoring to domestic suppliers (Hindustan Metals).\n2. Manufacturing Quality: 20% drop in weld defect scrap rate on shop floor by edge process control (Cp/Cpk target > 1.50) and active operator alerts.\n3. ESG Sustainability: 14.2% carbon reduction verified through blockchain scope 3 shipping trackers.\n4. Scalability: Highly modular client-side dashboard with zero heavy cloud dependencies, allowing easy integration for small-scale Indian auto retrofitting plants."
-        },
-        4: {
-            title: "PROPOSED TECH STACK / ARCHITECTURE",
-            content: "Front-End UI Dashboard: Vanilla HTML5, CSS Grid Systems, Javascript ES6 (Zero-Dependency Offline Execution).\nAI Inference: YOLOv8 Edge Vision models (object classification for weld defects & road threats) compiled to WebAssembly.\nResilience Engine: Graph Neural Networks (GNN) modeling global shipping ports & transit lanes risk nodes.\nIntegration Layer: Blockchain ledger contracts (Provenance traceability) + REST APIs for ERP system triggers (Oracle/SAP purchase reconciliations)."
-        },
-        5: {
-            title: "Architecture Diagrams, Screenshots / Video Demo of Application",
-            content: "Demo Details & Workspace URL:\n\n1. AltRoute-AI Map: Reroutes battery chemistry imports from China to Chile or Domestic mines during Taiwan Strait or Suez port strikes.\n2. Substitut-AI Lab: Computes performance-vs-cost tradeoffs when blending Ferrite into traction motors to avoid raw material dependencies.\n3. VisionDetect-AI: Runs a simulated live welding joint inspect camera detecting porosity, crack, and misalignment defects.\n4. ADAS Windshield Simulator: Tests lane tracking and obstacle detection (Cattle, Potholes) adapting telemetry for Indian contexts.\n5. Passport-AI: Holographic QR battery passport disclosures (Scope 3 carbon, second-life SOH grading)."
-        },
-        6: {
-            title: "Why your solution must be considered?",
-            content: "Why Choose AegisFlow AI:\n\n1. Holistic Control Tower: Uniquely bridges supply-chain risk (AltRoute-AI) directly with shop floor execution capability (VisionDetect-AI).\n2. Tailored for Emerging Markets: Addresses specific Indian contexts, e.g., domestic material substitution parameters and ADAS safeguards for stray cattle and chaotic lane cut-ins.\n3. Real-world Integration Ready: Generates live ERP purchase proposals and automates supplier email communications out-of-the-box.\n4. Low-Cost Implementation: Light, edge-executable scripts running client-side with minimal computing overhead."
-        },
-        7: {
-            title: "Any Additional Information",
-            content: "Project Repository: https://github.com/aegisflow/aegisflow-hackathon-2026\nVideo Demonstration: Narration and click walkthrough matching index.html dashboard included in file suite guide.\nOfficial Templates Compatibility: Fully pre-filled slides align directly with the ET AutoTech PowerPoint presentation structure."
-        },
-        8: {
-            title: "THANK YOU",
-            content: "AegisFlow AI | Securing the Future of Automotive Manufacturing\n\nEmail: contact@aegisflow.ai\nGitHub: github.com/aegisflow/aegisflow-suite\n\nAutoTech Hackathon 2026"
-        }
-    };
-
-    let currentSlide = 1;
-    const slideThumbnails = document.querySelectorAll('.slide-thumbnails-sidebar .thumbnail');
-    const editorSlideTitle = document.getElementById('editor-slide-title');
-    const editorSlideContent = document.getElementById('editor-slide-content');
-    const editorSlideCounter = document.getElementById('editor-slide-counter');
-    const btnCopySlide = document.getElementById('btn-copy-slide');
-    const btnDownloadSlidesTxt = document.getElementById('btn-download-slides-txt');
-
-    function openPitchModal() {
-        pitchModal.classList.remove('hidden');
-        loadSlide(1);
-    }
-
-    function closePitchModal() {
-        pitchModal.classList.add('hidden');
-    }
-
-    function loadSlide(slideNum) {
-        currentSlide = slideNum;
-        slideThumbnails.forEach(thumb => thumb.classList.remove('active'));
-        const activeThumb = document.querySelector(`.thumbnail[data-slide="${slideNum}"]`);
-        if (activeThumb) activeThumb.classList.add('active');
-
-        if (editorSlideTitle) editorSlideTitle.value = slideData[slideNum].title;
-        if (editorSlideContent) editorSlideContent.value = slideData[slideNum].content;
-        if (editorSlideCounter) editorSlideCounter.textContent = `Slide ${slideNum} of 8`;
-    }
-
-    btnExportPitch.addEventListener('click', openPitchModal);
-    pitchModalClose.addEventListener('click', closePitchModal);
-    btnCloseModalConfirm.addEventListener('click', closePitchModal);
-
-    slideThumbnails.forEach(thumb => {
-        thumb.addEventListener('click', () => {
-            const slideNum = parseInt(thumb.getAttribute('data-slide'));
-            loadSlide(slideNum);
-        });
-    });
-
-    if (editorSlideTitle) {
-        editorSlideTitle.addEventListener('input', () => {
-            slideData[currentSlide].title = editorSlideTitle.value;
-        });
-    }
-    if (editorSlideContent) {
-        editorSlideContent.addEventListener('input', () => {
-            slideData[currentSlide].content = editorSlideContent.value;
-        });
-    }
-
-    if (btnCopySlide) {
-        btnCopySlide.addEventListener('click', () => {
-            const textToCopy = `SLIDE ${currentSlide}: ${editorSlideTitle.value}\n\n${editorSlideContent.value}`;
-            navigator.clipboard.writeText(textToCopy);
-            btnCopySlide.innerHTML = `<i class="fa-solid fa-check text-success"></i> Slide Copied!`;
-            setTimeout(() => {
-                btnCopySlide.innerHTML = `<i class="fa-regular fa-copy"></i> Copy Slide Text`;
-            }, 1500);
-        });
-    }
-
-    if (btnDownloadSlidesTxt) {
-        btnDownloadSlidesTxt.addEventListener('click', () => {
-            let fullText = "=========================================================\n";
-            fullText += " AEGISFLOW AI - PITCH PRESENTATION SLIDES OUTLINE\n";
-            fullText += "=========================================================\n\n";
-            
-            for (let i = 1; i <= 8; i++) {
-                fullText += `=========================================\n`;
-                fullText += ` SLIDE ${i}: ${slideData[i].title.toUpperCase()}\n`;
-                fullText += `=========================================\n`;
-                fullText += `${slideData[i].content}\n\n`;
-            }
-
-            const blob = new Blob([fullText], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'aegisflow_pitch_presentation_outline.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        });
-    }
-
 
     /* ==========================================================================
-       8. Module 6: ADAS-Adopt-AI Indian Context Road Simulator
+       7. Module 6: ADAS-Adopt-AI Indian Context Road Simulator (Steerable Game)
        ========================================================================== */
     const adasCanvas = document.getElementById('adas-canvas');
     let adasCtx = null;
@@ -1426,8 +1335,55 @@ Director of Sustainable Procurement`
         laneOffset: 0,
         steerCorrection: 'Center Alignment',
         steerAngle: 0,
-        weather: 'clear'
+        weather: 'clear',
+        keys: {}
     };
+
+    // Keyboard controls listeners for ADAS steering and throttle
+    window.addEventListener('keydown', e => {
+        if (state.activeTab === 'adas-simulator') {
+            adasState.keys[e.key] = true;
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault(); // prevent window scrolling
+            }
+        }
+    });
+
+    window.addEventListener('keyup', e => {
+        if (state.activeTab === 'adas-simulator') {
+            adasState.keys[e.key] = false;
+        }
+    });
+
+    // Touch steer support for mobile canvas clicks
+    if (adasCanvas) {
+        adasCanvas.addEventListener('mousedown', e => {
+            const rect = adasCanvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            if (clickX < rect.width / 2) {
+                adasState.keys['ArrowLeft'] = true;
+            } else {
+                adasState.keys['ArrowRight'] = true;
+            }
+        });
+        adasCanvas.addEventListener('mouseup', () => {
+            adasState.keys['ArrowLeft'] = false;
+            adasState.keys['ArrowRight'] = false;
+        });
+        adasCanvas.addEventListener('touchstart', e => {
+            const rect = adasCanvas.getBoundingClientRect();
+            const touchX = e.touches[0].clientX - rect.left;
+            if (touchX < rect.width / 2) {
+                adasState.keys['ArrowLeft'] = true;
+            } else {
+                adasState.keys['ArrowRight'] = true;
+            }
+        });
+        adasCanvas.addEventListener('touchend', () => {
+            adasState.keys['ArrowLeft'] = false;
+            adasState.keys['ArrowRight'] = false;
+        });
+    }
 
     function initAdasSimulation() {
         if (!adasCtx) return;
@@ -1441,7 +1397,6 @@ Director of Sustainable Procurement`
         adasState.steerAngle = 0;
         adasState.weather = 'clear';
 
-        // Weather Selection Buttons Click Listeners
         const adasWeatherGroup = document.getElementById('adas-weather-group');
         if (adasWeatherGroup) {
             const weatherBtns = adasWeatherGroup.querySelectorAll('button');
@@ -1453,7 +1408,6 @@ Director of Sustainable Procurement`
                     const weather = btn.getAttribute('data-weather');
                     adasState.weather = weather;
                     
-                    // Modify HUD warning/info panels based on weather
                     if (weather === 'clear') {
                         adasState.alertness = 98;
                         adasAlertVal.textContent = '98%';
@@ -1561,6 +1515,38 @@ Director of Sustainable Procurement`
                 adasCtx.fill();
             }
 
+            // Keyboard Interactive controls steering angle mapping
+            if (adasState.keys['ArrowLeft']) {
+                adasState.steerAngle -= 1.5;
+                adasState.steerCorrection = "Manual Left";
+            } else if (adasState.keys['ArrowRight']) {
+                adasState.steerAngle += 1.5;
+                adasState.steerCorrection = "Manual Right";
+            }
+            if (adasState.keys['ArrowUp']) {
+                const limit = adasState.weather === 'rain' ? 45 : (adasState.weather === 'fog' ? 30 : (adasState.weather === 'night' ? 50 : 80));
+                if (adasState.speed < limit) adasState.speed += 1.2;
+            } else if (adasState.keys['ArrowDown']) {
+                adasState.speed -= 2;
+                adasState.brake = 40;
+            }
+
+            // Auto-Lane-Keeping Assist (LKA) visual boundary limits checks
+            if (Math.abs(adasState.steerAngle) > 30) {
+                adasState.steerCorrection = "ADAS LKA Correcting";
+                adasState.steerAngle += adasState.steerAngle > 0 ? -1.2 : 1.2;
+                
+                // Draw flashing red Lane Assist margins
+                adasCtx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+                adasCtx.lineWidth = 15;
+                adasCtx.beginPath();
+                adasCtx.moveTo(10, 10);
+                adasCtx.lineTo(10, adasCanvas.height - 10);
+                adasCtx.moveTo(adasCanvas.width - 10, 10);
+                adasCtx.lineTo(adasCanvas.width - 10, adasCanvas.height - 10);
+                adasCtx.stroke();
+            }
+
             // Animation lane offset increment
             adasState.laneOffset += adasState.speed * 0.15;
             if (adasState.laneOffset > 60) adasState.laneOffset = 0;
@@ -1570,9 +1556,9 @@ Director of Sustainable Procurement`
             adasCtx.lineWidth = 2;
             adasCtx.beginPath();
             adasCtx.moveTo(240, 140);
-            adasCtx.lineTo(180, 280);
+            adasCtx.lineTo(180 + adasState.steerAngle * 1.5, 280);
             adasCtx.moveTo(240, 140);
-            adasCtx.lineTo(300, 280);
+            adasCtx.lineTo(300 + adasState.steerAngle * 1.5, 280);
             adasCtx.stroke();
 
             // Draw dotted center lines (perspective animate)
@@ -1599,43 +1585,35 @@ Director of Sustainable Procurement`
                 if (adasState.threatDist < 5) adasState.threatDist = 5;
 
                 // perspective size and position calculation
-                const factor = (100 - adasState.threatDist) / 100; // 0 (horizon) to 1 (near)
+                const factor = (100 - adasState.threatDist) / 100;
                 const threatSize = 10 + factor * 80;
                 const threatY = 140 + factor * 120;
                 
-                // horizontal center deviation based on threat type
-                let threatX = 240;
-                if (adasState.activeThreat === 'rickshaw') threatX = 200 + factor * 20; // cutting in from left
+                let threatX = 240 + adasState.steerAngle * factor;
+                if (adasState.activeThreat === 'rickshaw') threatX = (200 + factor * 20) + adasState.steerAngle * factor;
                 
                 // Draw threat shapes
                 adasCtx.shadowBlur = 10;
                 
-                // Weather visibility multipliers for YOLO confidence
                 let confMult = 1.0;
                 if (adasState.weather === 'rain') confMult = 0.8;
                 else if (adasState.weather === 'fog') confMult = 0.65;
                 else if (adasState.weather === 'night') confMult = 0.85;
 
                 if (adasState.activeThreat === 'cattle') {
-                    // Stray Cow shape
-                    adasCtx.fillStyle = '#78350f'; // Brown
+                    adasCtx.fillStyle = '#78350f';
                     adasCtx.shadowColor = '#78350f';
-                    // Cow body rect
                     adasCtx.fillRect(threatX - threatSize/2, threatY - threatSize/3, threatSize, threatSize/2);
-                    // Head rect
                     adasCtx.fillStyle = '#b45309';
                     adasCtx.fillRect(threatX - threatSize/2 - threatSize/4, threatY - threatSize/2, threatSize/3, threatSize/3);
-                    // Legs
                     adasCtx.fillStyle = '#451a03';
                     adasCtx.fillRect(threatX - threatSize/3, threatY + threatSize/6, threatSize/8, threatSize/4);
                     adasCtx.fillRect(threatX + threatSize/4, threatY + threatSize/6, threatSize/8, threatSize/4);
 
-                    // YOLO Bounding Box Overlay
                     adasCtx.strokeStyle = 'var(--color-danger)';
                     adasCtx.lineWidth = 2.5;
                     adasCtx.strokeRect(threatX - threatSize/2 - 10, threatY - threatSize/2 - 5, threatSize + 20, threatSize + 15);
                     
-                    // Tag label
                     adasCtx.fillStyle = 'rgba(239, 68, 68, 0.85)';
                     adasCtx.fillRect(threatX - threatSize/2 - 10, threatY - threatSize/2 - 25, 110, 20);
                     adasCtx.fillStyle = '#ffffff';
@@ -1643,7 +1621,6 @@ Director of Sustainable Procurement`
                     adasCtx.fillText(`STRAY CATTLE [${Math.round(99 * confMult)}%]`, threatX - threatSize/2 - 5, threatY - threatSize/2 - 12);
                 } 
                 else if (adasState.activeThreat === 'pothole') {
-                    // Pothole shape (oval pit)
                     adasCtx.fillStyle = '#020617';
                     adasCtx.shadowColor = '#000';
                     adasCtx.beginPath();
@@ -1656,7 +1633,6 @@ Director of Sustainable Procurement`
                     adasCtx.ellipse(threatX, threatY + 10, threatSize/2, threatSize/4, 0, 0, Math.PI * 2);
                     adasCtx.stroke();
 
-                    // Bounding Box
                     adasCtx.strokeStyle = 'var(--color-warning)';
                     adasCtx.lineWidth = 2;
                     adasCtx.strokeRect(threatX - threatSize/2 - 5, threatY - threatSize/4 + 2, threatSize + 10, threatSize/2 + 8);
@@ -1668,17 +1644,14 @@ Director of Sustainable Procurement`
                     adasCtx.fillText(`DEEP POTHOLE [${Math.round(94 * confMult)}%]`, threatX - threatSize/2, threatY - threatSize/4 - 4);
                 } 
                 else if (adasState.activeThreat === 'rickshaw') {
-                    // Schematic Auto-Rickshaw (Yellow/Black boxy)
-                    adasCtx.fillStyle = '#eab308'; // Yellow top
+                    adasCtx.fillStyle = '#eab308';
                     adasCtx.shadowColor = '#eab308';
                     adasCtx.fillRect(threatX - threatSize/2, threatY - threatSize/3, threatSize, threatSize/3);
-                    adasCtx.fillStyle = '#1e293b'; // Black bottom
+                    adasCtx.fillStyle = '#1e293b';
                     adasCtx.fillRect(threatX - threatSize/2, threatY, threatSize, threatSize/4);
-                    // Windshield
                     adasCtx.fillStyle = '#38bdf8';
                     adasCtx.fillRect(threatX - threatSize/3, threatY - threatSize/4, threatSize * 0.6, threatSize/8);
 
-                    // Bounding Box
                     adasCtx.strokeStyle = 'var(--color-danger)';
                     adasCtx.lineWidth = 2.5;
                     adasCtx.strokeRect(threatX - threatSize/2 - 5, threatY - threatSize/3 - 10, threatSize + 10, threatSize * 0.7);
@@ -1690,31 +1663,40 @@ Director of Sustainable Procurement`
                     adasCtx.fillText(`RICKSHAW CUT-IN [${Math.round(96 * confMult)}%]`, threatX - threatSize/2, threatY - threatSize/3 - 16);
                 }
 
-                adasCtx.shadowBlur = 0; // reset shadows
+                adasCtx.shadowBlur = 0;
 
-                // Telemetry adjustments during threats
-                if (adasState.activeThreat === 'cattle') {
-                    adasState.speed -= 2.2;
+                // Active Emergency Braking (AEB) trigger overrides if user fails to brake
+                if (adasState.threatDist < 30) {
+                    adasState.speed -= 4.5;
                     adasState.brake = 100;
-                    adasState.steerCorrection = 'Avoidance Steering';
-                    adasState.steerAngle = -25; // swerve left
-                } 
-                else if (adasState.activeThreat === 'pothole') {
-                    adasState.speed -= 1.8;
-                    adasState.brake = 45;
-                    adasState.steerCorrection = 'Left Correction';
-                    adasState.steerAngle = -15; // lane nudge
-                } 
-                else if (adasState.activeThreat === 'rickshaw') {
-                    adasState.speed -= 1.5;
-                    adasState.brake = 60;
-                    adasState.steerCorrection = 'Right Correction';
-                    adasState.steerAngle = 18; // swerve right
+                    adasState.steerCorrection = "ADAS AEB OVERRIDE";
+                    
+                    adasObjectAlert.textContent = "EMERGENCY BRAKING TRIGGERED";
+                    adasObjectAlert.className = "chart-alert text-danger";
+                    
+                    adasCardSpeed.className = "cpk-card alert-border animate-pulse";
+                    adasCardBrake.className = "cpk-card alert-border animate-pulse";
+                }
+                else {
+                    if (adasState.activeThreat === 'cattle') {
+                        adasState.speed -= 2.2;
+                        adasState.brake = 80;
+                        adasState.steerCorrection = 'Avoidance Swerve';
+                    } 
+                    else if (adasState.activeThreat === 'pothole') {
+                        adasState.speed -= 1.8;
+                        adasState.brake = 35;
+                        adasState.steerCorrection = 'Nudge Left';
+                    } 
+                    else if (adasState.activeThreat === 'rickshaw') {
+                        adasState.speed -= 1.5;
+                        adasState.brake = 60;
+                        adasState.steerCorrection = 'Avoidance Right';
+                    }
                 }
 
                 if (adasState.speed < 0) adasState.speed = 0;
             } else {
-                // Return to cruise speed based on current weather environment
                 let cruiseSpeed = 60;
                 if (adasState.weather === 'rain') cruiseSpeed = 45;
                 else if (adasState.weather === 'fog') cruiseSpeed = 30;
@@ -1726,13 +1708,15 @@ Director of Sustainable Procurement`
                     adasState.speed -= 0.8;
                 }
                 
-                adasState.brake = 0;
-                adasState.steerCorrection = 'Center Alignment';
-                if (adasState.steerAngle < 0) adasState.steerAngle += 1;
-                else if (adasState.steerAngle > 0) adasState.steerAngle -= 1;
+                if (!adasState.keys['ArrowDown']) adasState.brake = 0;
+                if (!adasState.keys['ArrowLeft'] && !adasState.keys['ArrowRight']) {
+                    adasState.steerCorrection = 'Center Alignment';
+                    if (adasState.steerAngle < 0) adasState.steerAngle += 1;
+                    else if (adasState.steerAngle > 0) adasState.steerAngle -= 1;
+                }
             }
 
-            // Draw Weather Particles overlays
+            // Weather Particles draw layers
             if (adasState.weather === 'rain') {
                 adasCtx.strokeStyle = 'rgba(156, 163, 175, 0.4)';
                 adasCtx.lineWidth = 1;
@@ -1775,9 +1759,7 @@ Director of Sustainable Procurement`
             // Windshield corner brackets
             adasCtx.strokeStyle = 'var(--color-teal)';
             adasCtx.lineWidth = 3;
-            // Top Left
             adasCtx.beginPath(); adasCtx.moveTo(25, 15); adasCtx.lineTo(15, 15); adasCtx.lineTo(15, 25); adasCtx.stroke();
-            // Top Right
             adasCtx.beginPath(); adasCtx.moveTo(adasCanvas.width - 25, 15); adasCtx.lineTo(adasCanvas.width - 15, 15); adasCtx.lineTo(adasCanvas.width - 15, 25); adasCtx.stroke();
 
             // Update DOM telemetry panels
@@ -1788,14 +1770,12 @@ Director of Sustainable Procurement`
             adasTargetDist.textContent = adasState.activeThreat ? `${Math.round(adasState.threatDist)} m` : 'N/A';
             adasSteeringStatus.textContent = adasState.steerCorrection;
 
-            // Trigger next frame
             adasSimId = requestAnimationFrame(drawWindshieldFeed);
         }
 
         drawWindshieldFeed();
     }
 
-    // ADAS trigger button callbacks
     if (triggerCattleBtn) {
         triggerCattleBtn.addEventListener('click', () => {
             adasState.activeThreat = 'cattle';
@@ -1893,7 +1873,6 @@ Director of Sustainable Procurement`
         adasState.steerAngle = 0;
         adasState.weather = 'clear';
 
-        // Reset active weather button UI state
         const adasWeatherGroup = document.getElementById('adas-weather-group');
         if (adasWeatherGroup) {
             const weatherBtns = adasWeatherGroup.querySelectorAll('button');
@@ -1932,19 +1911,164 @@ Director of Sustainable Procurement`
 
 
     /* ==========================================================================
-       9. Module 7: Passport-AI Battery Digital Passport Scanner
+       8. Module 7: Passport-AI Battery Digital Passport Explorer (Multi-UID registry)
        ========================================================================== */
     const btnStartScan = document.getElementById('btn-start-scan');
     const passportLaser = document.getElementById('passport-laser');
     const batteryMesh = document.getElementById('battery-mesh');
     const batteryIconPulse = document.getElementById('battery-icon-pulse');
     const scannerIndicator = document.getElementById('scanner-indicator');
+    const passportUidSelector = document.getElementById('passport-uid-selector');
     
     const passportEmptyState = document.getElementById('passport-empty-state');
     const passportResults = document.getElementById('passport-results');
 
+    // Decentralized Battery profiles mock database
+    const passportRegistry = {
+        'EV-BAT-8092-NMC': {
+            uid: '8092',
+            chemistry: 'Lithium NMC 811',
+            details: `
+                <div class="results-section">
+                    <h4 class="section-sub-title"><i class="fa-solid fa-atom text-success"></i> Battery Cell Chemistry (NMC 811)</h4>
+                    <div class="supplier-stats-grid mt-2" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                        <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Nickel</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">80%</span>
+                        </div>
+                        <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Manganese</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">10%</span>
+                        </div>
+                        <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Cobalt</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">10%</span>
+                        </div>
+                        <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Lithium</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">100%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="results-section mt-4">
+                    <h4 class="section-sub-title"><i class="fa-solid fa-arrows-spin text-success"></i> Circular Lifecycle & SOH Metrics</h4>
+                    <div class="supplier-stats-grid mt-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="stat-item-box" style="padding: 0.65rem; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.65rem; color: #64748b; text-transform: uppercase;">Recyclability Index</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; display: block; margin-top: 0.25rem;">94.2%</span>
+                        </div>
+                        <div class="stat-item-box" style="padding: 0.65rem; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.65rem; color: #64748b; text-transform: uppercase;">Second-Life SOH Prediction</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; display: block; margin-top: 0.25rem;">Grade A (92% Health)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="results-section mt-4">
+                    <h4 class="section-sub-title"><i class="fa-solid fa-link text-success"></i> Scope 3 Blockchain Provenance</h4>
+                    <div class="risk-bullets mt-2" style="font-size: 0.7rem; gap: 0.35rem; display: flex; flex-direction: column;">
+                        <div style="display: flex; gap: 0.5rem; color: #cbd5e1;"><i class="fa-solid fa-check-double text-success"></i> <span>Extraction: Atacama Desert Lithium Mine (Ethical Sourcing Verified)</span></div>
+                        <div style="display: flex; gap: 0.5rem; color: #cbd5e1;"><i class="fa-solid fa-check-double text-success"></i> <span>Smelting: Aussie Mineral Clean Smelter (Green Hydrogen Audit Verified)</span></div>
+                        <div style="display: flex; gap: 0.5rem; color: #cbd5e1;"><i class="fa-solid fa-check-double text-success"></i> <span>Assembly: Pune Tab Welding Station 4 (Cpk: 1.54 Verified)</span></div>
+                    </div>
+                </div>`
+        },
+        'EV-BAT-4412-LFP': {
+            uid: '4412',
+            chemistry: 'Lithium Iron Phosphate (LFP)',
+            details: `
+                <div class="results-section">
+                    <h4 class="section-sub-title"><i class="fa-solid fa-atom text-success"></i> Battery Cell Chemistry (LFP)</h4>
+                    <div class="supplier-stats-grid mt-2" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                        <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Iron</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">100%</span>
+                        </div>
+                        <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Phosphate</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">100%</span>
+                        </div>
+                        <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Cobalt</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">0% (Cobalt-Free)</span>
+                        </div>
+                        <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Lithium</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">100%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="results-section mt-4">
+                    <h4 class="section-sub-title"><i class="fa-solid fa-arrows-spin text-success"></i> Circular Lifecycle & SOH Metrics</h4>
+                    <div class="supplier-stats-grid mt-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="stat-item-box" style="padding: 0.65rem; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.65rem; color: #64748b; text-transform: uppercase;">Recyclability Index</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; display: block; margin-top: 0.25rem;">98.7%</span>
+                        </div>
+                        <div class="stat-item-box" style="padding: 0.65rem; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.65rem; color: #64748b; text-transform: uppercase;">Second-Life SOH Prediction</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; display: block; margin-top: 0.25rem;">Grade A+ (97% Health)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="results-section mt-4">
+                    <h4 class="section-sub-title"><i class="fa-solid fa-link text-success"></i> Scope 3 Blockchain Provenance</h4>
+                    <div class="risk-bullets mt-2" style="font-size: 0.7rem; gap: 0.35rem; display: flex; flex-direction: column;">
+                        <div style="display: flex; gap: 0.5rem; color: #cbd5e1;"><i class="fa-solid fa-check-double text-success"></i> <span>Extraction: Western Australian Lithium Mine (Green Mining Audit Verified)</span></div>
+                        <div style="display: flex; gap: 0.5rem; color: #cbd5e1;"><i class="fa-solid fa-check-double text-success"></i> <span>Synthesis: Indian Local LFP Cathode Plant (Zero Emissions Smelter)</span></div>
+                        <div style="display: flex; gap: 0.5rem; color: #cbd5e1;"><i class="fa-solid fa-check-double text-success"></i> <span>Assembly: Pune Tab Welding Station 2 (Cpk: 1.48 Verified)</span></div>
+                    </div>
+                </div>`
+        },
+        'EV-BAT-5590-SOLID': {
+            uid: '5590',
+            chemistry: 'Solid-State (Silicon Anode)',
+            details: `
+                <div class="results-section">
+                    <h4 class="section-sub-title"><i class="fa-solid fa-atom text-success"></i> Battery Cell Chemistry (Solid-State)</h4>
+                    <div class="supplier-stats-grid mt-2" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;">
+                        <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Silicon</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">100%</span>
+                        </div>
+                        <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Sulfide Solid</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">100%</span>
+                        </div>
+                        <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Manganese</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">10%</span>
+                        </div>
+                        <div class="stat-item-box" style="padding: 0.5rem; text-align: center; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.6rem; color: #64748b; text-transform: uppercase;">Lithium</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-weight: 700; font-size: 0.95rem; display: block; margin-top: 0.25rem;">100%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="results-section mt-4">
+                    <h4 class="section-sub-title"><i class="fa-solid fa-arrows-spin text-success"></i> Circular Lifecycle & SOH Metrics</h4>
+                    <div class="supplier-stats-grid mt-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="stat-item-box" style="padding: 0.65rem; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.65rem; color: #64748b; text-transform: uppercase;">Recyclability Index</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; display: block; margin-top: 0.25rem;">89.4%</span>
+                        </div>
+                        <div class="stat-item-box" style="padding: 0.65rem; border: 1px solid var(--border-muted); border-radius: 8px;">
+                            <span class="stat-lbl" style="font-size: 0.65rem; color: #64748b; text-transform: uppercase;">Second-Life SOH Prediction</span>
+                            <span class="stat-val text-success" style="font-family: var(--font-heading); font-size: 1.1rem; font-weight: 700; display: block; margin-top: 0.25rem;">Grade B (88% Health)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="results-section mt-4">
+                    <h4 class="section-sub-title"><i class="fa-solid fa-link text-success"></i> Scope 3 Blockchain Provenance</h4>
+                    <div class="risk-bullets mt-2" style="font-size: 0.7rem; gap: 0.35rem; display: flex; flex-direction: column;">
+                        <div style="display: flex; gap: 0.5rem; color: #cbd5e1;"><i class="fa-solid fa-check-double text-success"></i> <span>Extraction: California Quartz Quarry (Ethical Silica Sourced)</span></div>
+                        <div style="display: flex; gap: 0.5rem; color: #cbd5e1;"><i class="fa-solid fa-check-double text-success"></i> <span>Production: Tokyo Solid Electrolyte Fab (Cleanroom Solar Power)</span></div>
+                        <div style="display: flex; gap: 0.5rem; color: #cbd5e1;"><i class="fa-solid fa-check-double text-success"></i> <span>Assembly: Pune Experimental Silicon Tab Line (Cpk: 1.54 Verified)</span></div>
+                    </div>
+                </div>`
+        }
+    };
+
     function initMaterialPassportScan() {
-        // Reset state
         if (btnStartScan) {
             btnStartScan.className = "btn btn-primary btn-block";
             btnStartScan.innerHTML = `<i class="fa-solid fa-camera"></i> Initialize Holographic ESG Scan`;
@@ -1963,6 +2087,10 @@ Director of Sustainable Procurement`
 
     if (btnStartScan) {
         btnStartScan.addEventListener('click', () => {
+            const selectedUID = passportUidSelector.value;
+            const profile = passportRegistry[selectedUID];
+            if (!profile) return;
+
             btnStartScan.setAttribute('disabled', 'true');
             btnStartScan.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Aligning Laser Reader...`;
             
@@ -1972,25 +2100,158 @@ Director of Sustainable Procurement`
             batteryMesh.classList.add('battery-active-glow');
             passportLaser.classList.remove('hidden');
 
-            // 2.5 seconds scanner animation simulation
             setTimeout(() => {
                 passportLaser.classList.add('hidden');
                 batteryMesh.classList.remove('battery-active-glow');
                 batteryIconPulse.style.color = "var(--color-success)";
 
                 scannerIndicator.className = "badge badge-success";
-                scannerIndicator.textContent = "Verified: UID-8092";
+                scannerIndicator.textContent = `Verified: UID-${profile.uid}`;
 
                 btnStartScan.className = "btn btn-success btn-block";
                 btnStartScan.innerHTML = `<i class="fa-solid fa-shield-check"></i> ESG Scan Verified`;
 
                 passportEmptyState.classList.add('hidden');
+                passportResults.innerHTML = profile.details;
                 passportResults.classList.remove('hidden');
                 
-                alert("SUCCESS: QR Scan complete.\nDigital Material Passport loaded from decentralized Scope 3 blockchain network.");
-            }, 2500);
+                alert(`SUCCESS: battery profile lookup complete.\nMaterial Passport loaded for serial UID-${profile.uid} (${profile.chemistry}).`);
+            }, 2000);
         });
     }
 
-});
 
+    /* ==========================================================================
+       9. Presentation Deck Modal Workspace Editor
+       ========================================================================== */
+    const slideData = {
+        1: {
+            title: "AegisFlow AI: Resilient Supply Chain & Smart Manufacturing",
+            content: "ET AutoTech Hackathon 2026\nTheme: Theme 1 - Electrification, Smart Sourcing & Zero-Defect Manufacturing\nTeam Name: Team AegisFlow\nTeam Members: Lead Architect & AI Developer\n\nSolution Outline:\nAn end-to-end operational intelligence suite integrating AltRoute-AI (geopolitical route optimization & sourcing GNNs) and VisionDetect-AI (edge computer vision welding analytics) for Indian automotive component manufacturing ecosystems."
+        },
+        2: {
+            title: "Theme Chosen - Brief Summary & Proposed Solution/Idea",
+            content: "Theme 1: Electrification & Smart Manufacturing / Sourcing Resilience\n\nProposed Solution:\nAegisFlow AI is a dual-core digital control tower for automotive manufacturing:\n1. Geopolitical Risk Hedging (AltRoute-AI): A real-time shipping risk assessment mapping and alternate raw material blend simulator (e.g., Neodymium to Ferrite ratios) with automated SAP/Oracle purchase proposals.\n2. Intelligent Edge Quality Inspect (VisionDetect-AI): 120 FPS welding camera analyzer providing real-time quality alerts, Cp/Cpk SPC dashboard tracking, and automatic robotic calibration routines.\n\nThis is a brand-new integrated control framework designed specifically to elevate local Indian suppliers (MSMEs) to high-yield Global Tier-1 sourcing standards."
+        },
+        3: {
+            title: "IMPACT OF PROPOSED SOLUTION",
+            content: "Feasibility, Scalability & Quantitative Impact:\n\n1. Operational Lead Time: 30% reduction in mineral logistics bottlenecks by predicting port blockades (Suez Canal / Taiwan Strait) and near-shoring to domestic suppliers (Hindustan Metals).\n2. Manufacturing Quality: 20% drop in weld defect scrap rate on shop floor by edge process control (Cp/Cpk target > 1.50) and active operator alerts.\n3. ESG Sustainability: 14.2% carbon reduction verified through blockchain scope 3 shipping trackers.\n4. Scalability: Highly modular client-side dashboard with zero heavy cloud dependencies, allowing easy integration for small-scale Indian auto retrofitting plants."
+        },
+        4: {
+            title: "PROPOSED TECH STACK / ARCHITECTURE",
+            content: "Front-End UI Dashboard: Vanilla HTML5, CSS Grid Systems, Javascript ES6 (Zero-Dependency Offline Execution).\nAI Inference: YOLOv8 Edge Vision models (object classification for weld defects & road threats) compiled to WebAssembly.\nResilience Engine: Graph Neural Networks (GNN) modeling global shipping ports & transit lanes risk nodes.\nIntegration Layer: Blockchain ledger contracts (Provenance traceability) + REST APIs for ERP system triggers (Oracle/SAP purchase reconciliations)."
+        },
+        5: {
+            title: "Architecture Diagrams, Screenshots / Video Demo of Application",
+            content: "Demo Details & Workspace URL:\n\n1. AltRoute-AI Map: Reroutes battery chemistry imports from China to Chile or Domestic mines during Taiwan Strait or Suez port strikes.\n2. Substitut-AI Lab: Computes performance-vs-cost tradeoffs when blending Ferrite into traction motors to avoid raw material dependencies.\n3. VisionDetect-AI: Runs a simulated live welding joint inspect camera detecting porosity, crack, and misalignment defects.\n4. ADAS Windshield Simulator: Tests lane tracking and obstacle detection (Cattle, Potholes) adapting telemetry for Indian contexts.\n5. Passport-AI: Holographic QR battery passport disclosures (Scope 3 carbon, second-life SOH grading)."
+        },
+        6: {
+            title: "Why your solution must be considered?",
+            content: "Why Choose AegisFlow AI:\n\n1. Holistic Control Tower: Uniquely bridges supply-chain risk (AltRoute-AI) directly with shop floor execution capability (VisionDetect-AI).\n2. Tailored for Emerging Markets: Addresses specific Indian contexts, e.g., domestic material substitution parameters and ADAS safeguards for stray cattle and chaotic lane cut-ins.\n3. Real-world Integration Ready: Generates live ERP purchase proposals and automates supplier email communications out-of-the-box.\n4. Low-Cost Implementation: Light, edge-executable scripts running client-side with minimal computing overhead."
+        },
+        7: {
+            title: "Any Additional Information",
+            content: "Project Repository: https://github.com/aegisflow/aegisflow-hackathon-2026\nVideo Demonstration: Narration and click walkthrough matching index.html dashboard included in file suite guide.\nOfficial Templates Compatibility: Fully pre-filled slides align directly with the ET AutoTech PowerPoint presentation structure."
+        },
+        8: {
+            title: "THANK YOU",
+            content: "AegisFlow AI | Securing the Future of Automotive Manufacturing\n\nEmail: contact@aegisflow.ai\nGitHub: github.com/aegisflow/aegisflow-suite\n\nAutoTech Hackathon 2026"
+        }
+    };
+
+    let currentSlide = 1;
+    const slideThumbnails = document.querySelectorAll('.slide-thumbnails-sidebar .thumbnail');
+    const editorSlideTitle = document.getElementById('editor-slide-title');
+    const editorSlideContent = document.getElementById('editor-slide-content');
+    const editorSlideCounter = document.getElementById('editor-slide-counter');
+    const btnCopySlide = document.getElementById('btn-copy-slide');
+    const btnDownloadSlidesTxt = document.getElementById('btn-download-slides-txt');
+    const pitchModal = document.getElementById('pitch-modal');
+    const btnExportPitch = document.getElementById('btn-export-pitch');
+    const pitchModalClose = document.getElementById('pitch-modal-close');
+    const btnCloseModalConfirm = document.getElementById('btn-close-modal-confirm');
+
+    function openPitchModal() {
+        if (pitchModal) {
+            pitchModal.classList.remove('hidden');
+            loadSlide(1);
+        }
+    }
+
+    function closePitchModal() {
+        if (pitchModal) pitchModal.classList.add('hidden');
+    }
+
+    function loadSlide(slideNum) {
+        currentSlide = slideNum;
+        slideThumbnails.forEach(thumb => thumb.classList.remove('active'));
+        const activeThumb = document.querySelector(`.thumbnail[data-slide="${slideNum}"]`);
+        if (activeThumb) activeThumb.classList.add('active');
+
+        if (editorSlideTitle) editorSlideTitle.value = slideData[slideNum].title;
+        if (editorSlideContent) editorSlideContent.value = slideData[slideNum].content;
+        if (editorSlideCounter) editorSlideCounter.textContent = `Slide ${slideNum} of 8`;
+    }
+
+    if (btnExportPitch) btnExportPitch.addEventListener('click', openPitchModal);
+    if (pitchModalClose) pitchModalClose.addEventListener('click', closePitchModal);
+    if (btnCloseModalConfirm) btnCloseModalConfirm.addEventListener('click', closePitchModal);
+
+    slideThumbnails.forEach(thumb => {
+        thumb.addEventListener('click', () => {
+            const slideNum = parseInt(thumb.getAttribute('data-slide'));
+            loadSlide(slideNum);
+        });
+    });
+
+    if (editorSlideTitle) {
+        editorSlideTitle.addEventListener('input', () => {
+            slideData[currentSlide].title = editorSlideTitle.value;
+        });
+    }
+    if (editorSlideContent) {
+        editorSlideContent.addEventListener('input', () => {
+            slideData[currentSlide].content = editorSlideContent.value;
+        });
+    }
+
+    if (btnCopySlide) {
+        btnCopySlide.addEventListener('click', () => {
+            const textToCopy = `SLIDE ${currentSlide}: ${editorSlideTitle.value}\n\n${editorSlideContent.value}`;
+            navigator.clipboard.writeText(textToCopy);
+            btnCopySlide.innerHTML = `<i class="fa-solid fa-check text-success"></i> Slide Copied!`;
+            setTimeout(() => {
+                btnCopySlide.innerHTML = `<i class="fa-regular fa-copy"></i> Copy Slide Text`;
+            }, 1500);
+        });
+    }
+
+    if (btnDownloadSlidesTxt) {
+        btnDownloadSlidesTxt.addEventListener('click', () => {
+            let fullText = "=========================================================\n";
+            fullText += " AEGISFLOW AI - PITCH PRESENTATION SLIDES OUTLINE\n";
+            fullText += "=========================================================\n\n";
+            
+            for (let i = 1; i <= 8; i++) {
+                fullText += `=========================================\n`;
+                fullText += ` SLIDE ${i}: ${slideData[i].title.toUpperCase()}\n`;
+                fullText += `=========================================\n`;
+                fullText += `${slideData[i].content}\n\n`;
+            }
+
+            const blob = new Blob([fullText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'aegisflow_pitch_presentation_outline.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    // Initialize Default States on load
+    updateMapUX();
+    updateSubstitutionUX();
+});
